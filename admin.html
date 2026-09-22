@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Orvix - Gestor Master de Licenças</title>
+  <link rel="icon" href="image/acai.png" type="image/png">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="stylesheet" href="/src/admin/admin.css">
+</head>
+<body>
+
+  <!-- ========================================================
+       MODAL DE AUTENTICAÇÃO MASTER / PIN DE SEGURANÇA
+       ======================================================== -->
+  <div class="master-auth-overlay" id="master-auth-overlay">
+    <div class="master-auth-card">
+      <div class="master-auth-icon">
+        <i data-lucide="shield-check"></i>
+      </div>
+      <h1 class="master-auth-title">Orvix <span>Master</span></h1>
+      <p class="master-auth-sub">Painel restrito de emissão e controle de chaves SaaS</p>
+
+      <div class="master-auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="tab-pin-btn">PIN Rápido</button>
+        <button type="button" class="auth-tab-btn" id="tab-email-btn">E-mail / Google</button>
+      </div>
+
+      <!-- Modo PIN -->
+      <form id="master-pin-form" class="auth-section active">
+        <div class="form-group">
+          <label for="master-pin-input">PIN Master de Segurança</label>
+          <input type="password" id="master-pin-input" class="admin-input" placeholder="Digite seu PIN (padrão: 101520)" inputmode="numeric" autofocus autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="btn-submit-pin">
+          <i data-lucide="key-round"></i>
+          <span>Acessar Painel Master</span>
+        </button>
+      </form>
+
+      <!-- Modo E-mail / Google -->
+      <div id="master-email-section" class="auth-section">
+        <button type="button" class="btn btn-secondary btn-block" id="btn-google-login">
+          <i data-lucide="chrome"></i>
+          <span>Entrar com Google</span>
+        </button>
+        <div class="auth-divider"><span>ou com e-mail master</span></div>
+        <form id="master-email-form">
+          <div class="form-group">
+            <input type="email" id="master-email-input" class="admin-input" placeholder="admin@orvix.com">
+          </div>
+          <div class="form-group">
+            <input type="password" id="master-password-input" class="admin-input" placeholder="Sua senha">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">
+            <i data-lucide="log-in"></i>
+            <span>Entrar</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="master-auth-footer">
+        <span class="auth-hint"><i data-lucide="lock"></i> Acesso 100% criptografado e seguro</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       APLICAÇÃO PRINCIPAL (EXIBIDA APÓS LOGIN MASTER)
+       ======================================================== -->
+  <div class="master-app-layout" id="master-app-layout" style="display: none;">
+    
+    <!-- Topbar Mobile-First -->
+    <header class="master-header">
+      <div class="header-container">
+        <div class="brand-group">
+          <div class="brand-logo">
+            <img src="image/acai.png" alt="Orvix">
+          </div>
+          <div class="brand-titles">
+            <span class="brand-name">Orvix <strong>Master</strong></span>
+            <span class="brand-tag">Gestor SaaS de Licenças</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <a href="/" class="btn-header-link" title="Abrir Sistema PDV" target="_blank">
+            <i data-lucide="monitor"></i>
+            <span class="hide-mobile">Ir ao PDV</span>
+          </a>
+          <button type="button" class="btn-header-logout" id="btn-master-logout" title="Bloquear / Sair">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="master-main-content">
+      <div class="content-container">
+
+        <!-- Banner de Boas-Vindas & Ação Principal -->
+        <div class="welcome-hero-bar">
+          <div>
+            <h2 class="hero-title">Chaves de Ativação</h2>
+            <p class="hero-subtitle">Gerencie estabelecimentos, controle validades e ative clientes com 1 clique.</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-new-key" id="open-new-license-modal">
+            <i data-lucide="plus-circle"></i>
+            <span>Nova Chave</span>
+          </button>
+        </div>
+
+        <!-- Banner Nova Aplicação Secundária Orvix Master -->
+        <div style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(79, 70, 229, 0.15)); border: 1px solid rgba(124, 58, 237, 0.35); border-radius: var(--radius-md); padding: 0.85rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <i data-lucide="sparkles" style="color: #c084fc; width: 22px; height: 22px;"></i>
+            <span style="font-size: 0.85rem; color: #f8fafc;">Nova Aplicação Secundária: <strong>Orvix Master</strong> com Login Único e Fila de Ativação!</span>
+          </div>
+          <a href="http://localhost:3001" target="_blank" class="btn btn-primary btn-sm" style="height: 34px; font-size: 0.8rem; text-decoration: none;">
+            <span>Abrir Orvix Master (Porta 3001)</span>
+            <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+          </a>
+        </div>
+
+        <!-- Métricas Rápidas (Grid Cards) -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon-box success">
+              <i data-lucide="key"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-number" id="metric-active-licenses">0</span>
+              <span class="metric-label">Licenças Ativas</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-box primary">
+              <i data-lucide="store"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-number" id="metric-total-tenants">0</span>
+              <span class="metric-label">Lojas Cadastradas</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-box warning">
+              <i data-lucide="users"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-number" id="metric-total-clients">0</span>
+              <span class="metric-label">Clientes / E-mails</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-box danger">
+              <i data-lucide="shield-alert"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-number" id="metric-blocked-licenses">0</span>
+              <span class="metric-label">Suspensas / Vencidas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de Busca e Filtros -->
+        <div class="filter-toolbar">
+          <div class="search-input-wrapper">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="search" id="license-search-input" class="search-input" placeholder="Buscar por cliente, loja ou chave..." autocomplete="off">
+          </div>
+
+          <div class="filter-pills" id="filter-pills-container">
+            <button type="button" class="filter-pill active" data-filter="all">Todas</button>
+            <button type="button" class="filter-pill" data-filter="ativo">Ativas</button>
+            <button type="button" class="filter-pill" data-filter="bloqueado">Bloqueadas</button>
+            <button type="button" class="filter-pill" data-filter="expirado">Expiradas</button>
+          </div>
+        </div>
+
+        <!-- Feed de Licenças (Cards Responsivos) -->
+        <div class="licenses-feed" id="licenses-feed-container">
+          <!-- Carregado dinamicamente via JS -->
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Botão Flutuante Mobile para Adicionar Chave -->
+    <button type="button" class="floating-fab-btn" id="fab-new-license" title="Criar Nova Chave">
+      <i data-lucide="plus"></i>
+    </button>
+  </div>
+
+  <!-- ========================================================
+       MODAL: CRIAR NOVA CHAVE DE ATIVAÇÃO
+       ======================================================== -->
+  <div class="modal-backdrop" id="new-license-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-icon">
+          <i data-lucide="key-round"></i>
+        </div>
+        <div>
+          <h3 class="modal-title">Emitir Nova Chave</h3>
+          <p class="modal-sub">Vincule a um estabelecimento e gere a chave para o cliente</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="close-new-license-modal">&times;</button>
+      </div>
+
+      <form id="new-license-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="new-tenant-name">Nome do Estabelecimento / Loja *</label>
+            <input type="text" id="new-tenant-name" class="admin-input" placeholder="Ex: Açaí da Serra - Filial 2" required>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="new-owner-email">E-mail do Proprietário *</label>
+              <input type="email" id="new-owner-email" class="admin-input" placeholder="cliente@email.com" required>
+            </div>
+            <div class="form-group">
+              <label for="new-owner-name">Nome do Proprietário</label>
+              <input type="text" id="new-owner-name" class="admin-input" placeholder="Ex: Carlos Silva">
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="new-owner-phone">WhatsApp / Telefone</label>
+              <input type="tel" id="new-owner-phone" class="admin-input" placeholder="Ex: 11987654321">
+            </div>
+            <div class="form-group">
+              <label for="new-license-plan">Plano / Modalidade</label>
+              <select id="new-license-plan" class="admin-input">
+                <option value="Mensal Pro" selected>Mensal Pro (30 dias)</option>
+                <option value="Trimestral">Trimestral (90 dias)</option>
+                <option value="Semestral">Semestral (180 dias)</option>
+                <option value="Anual VIP">Anual VIP (365 dias)</option>
+                <option value="Vitalício">Vitalício (Ilimitado)</option>
+                <option value="Trial Teste">Trial Teste (7 dias)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="new-license-key">Código da Chave (Opcional - deixe em branco para gerar automático)</label>
+            <div class="input-with-action">
+              <input type="text" id="new-license-key" class="admin-input mono" placeholder="ORVIX-LOJA-XXXX">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-generate-key-preview" title="Gerar código aleatório">
+                <i data-lucide="sparkles"></i>
+                <span>Gerar</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="new-license-duration">Duração (Dias)</label>
+              <input type="number" id="new-license-duration" class="admin-input" value="30" min="1" max="3650">
+            </div>
+            <div class="form-group">
+              <label for="new-license-devices">Limite de Caixas</label>
+              <input type="number" id="new-license-devices" class="admin-input" value="3" min="1" max="50">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="new-license-notes">Observações Internas (Opcional)</label>
+            <input type="text" id="new-license-notes" class="admin-input" placeholder="Ex: Pago no Pix, contato pelo Instagram...">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-new-license">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-license">
+            <i data-lucide="check-circle-2"></i>
+            <span>Gerar e Ativar Chave</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="master-toast-container" class="master-toast-container"></div>
+
+  <script type="module" src="/src/admin/admin.js"></script>
+</body>
+</html>

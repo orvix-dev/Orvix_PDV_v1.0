@@ -1,0 +1,6 @@
+{
+  "firestore": {
+    "database": "orvix-pdv-web",
+    "rules": "firestore.rules"
+  }
+}

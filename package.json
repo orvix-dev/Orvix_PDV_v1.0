@@ -1,0 +1,22 @@
+{
+  "name": "orvix-pdv",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:master": "vite orvix-master --port 3001 --host",
+    "build": "vite build",
+    "build:master": "vite build orvix-master",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "firebase": "^11.4.0",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
+    "lucide": "^0.475.0"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0"
+  }
+}

@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Orvix - PDV & Gestão</title>
+    <link rel="icon" href="image/acai.png" type="image/png">
+
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+    <div class="app-layout" id="app-layout" style="display: none;">
+        <!-- SIDEBAR -->
+        <aside class="app-sidebar" id="app-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo-wrapper">
+                    <img src="image/acai.png" alt="Logo Orvix" class="brand-logo-img">
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">Orvix PDV</span>
+                    <span class="brand-subtitle">PDV & Gestão</span>
+                </div>
+                <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Fechar menu">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">Operação</div>
+                <button class="nav-item tab active" data-tab="venda">
+                    <span class="nav-icon"><i data-lucide="shopping-cart"></i></span>
+                    <span class="nav-label">PDV / Venda</span>
+                </button>
+
+                <button class="nav-item tab" data-tab="comandas">
+                    <span class="nav-icon"><i data-lucide="clipboard-list"></i></span>
+                    <span class="nav-label">Comandas</span>
+                    <span class="nav-badge" id="open-orders-count" style="display: none;">0</span>
+                </button>
+
+                <button class="nav-item tab" data-tab="caixa">
+                    <span class="nav-icon"><i data-lucide="circle-dollar-sign"></i></span>
+                    <span class="nav-label">Caixa</span>
+                    <span class="sidebar-status-dot" id="sidebar-caixa-status" title="Status do Caixa"></span>
+                </button>
+
+                <div class="nav-section-label">Gestão</div>
+                <button class="nav-item tab" data-tab="produtos">
+                    <span class="nav-icon"><i data-lucide="package"></i></span>
+                    <span class="nav-label">Produtos</span>
+                </button>
+
+                <button class="nav-item tab" data-tab="historico">
+                    <span class="nav-icon"><i data-lucide="history"></i></span>
+                    <span class="nav-label">Histórico</span>
+                </button>
+
+                <button class="nav-item tab" data-tab="despesas">
+                    <span class="nav-icon"><i data-lucide="arrow-down-right"></i></span>
+                    <span class="nav-label">Despesas</span>
+                </button>
+
+                <button class="nav-item tab" data-tab="admin">
+                    <span class="nav-icon"><i data-lucide="settings-2"></i></span>
+                    <span class="nav-label">Administrativo</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="operator-profile">
+                    <div class="operator-avatar">
+                        <span id="operator-initials">AS</span>
+                    </div>
+                    <div class="operator-info">
+                        <div class="operator-name" id="sidebar-operator-name">Operador PDV</div>
+                        <div class="operator-role" id="sidebar-operator-role">Sistema Conectado</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- BACKDROP MOBILE -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+        <!-- MAIN AREA -->
+        <div class="app-main">
+            <!-- TOP HEADER -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button class="header-menu-btn" id="header-menu-btn" aria-label="Abrir Menu">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="header-title-wrapper">
+                        <h1 class="header-title" id="page-title">Ponto de Venda</h1>
+                        <span class="header-breadcrumb" id="page-breadcrumb">Início &bull; Venda Rápida</span>
+                    </div>
+                </div>
+
+                <div class="header-center">
+                    <!-- Balão de Desconto / Promoção Ativa -->
+                    <div id="discount-balloon" class="discount-pill" style="display: none;">
+                        <span class="discount-icon"><i data-lucide="sparkles"></i></span>
+                        <div class="discount-text-wrapper">
+                            <span class="discount-badge-title">PROMOÇÃO ATIVA</span>
+                            <span id="discount-details" class="discount-badge-detail">10% OFF em Açaí</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <!-- Status do Caixa Badge -->
+                    <div class="header-caixa-badge" id="header-caixa-badge" title="Clique para gerenciar o caixa">
+                        <span class="status-indicator-dot" id="header-caixa-dot"></span>
+                        <span class="status-indicator-text" id="header-caixa-text">Caixa: Fechado</span>
+                    </div>
+
+                    <!-- Relógio e Data -->
+                    <div class="header-datetime">
+                        <div class="header-time" id="current-time">--:--</div>
+                        <div class="header-date" id="current-date">--/--/----</div>
+                    </div>
+
+                    <!-- Botão de Alternar Tema (Dark Mode) -->
+                    <button class="theme-toggle-btn" id="theme-toggle-btn" title="Alternar Modo Claro / Escuro"
+                        aria-label="Alternar Tema">
+                        <span class="theme-icon-light"><i data-lucide="sun"></i></span>
+                        <span class="theme-icon-dark"><i data-lucide="moon"></i></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Banner de Promoção Mobile (Ativo quando promoção ligada em telas <= 860px) -->
+            <div id="mobile-promo-banner" class="mobile-promo-banner">
+                <span class="mobile-promo-icon"><i data-lucide="sparkles"></i></span>
+                <div class="mobile-promo-text">
+                    <span class="mobile-promo-badge">PROMOÇÃO ATIVA:</span>
+                    <span id="mobile-promo-details" class="mobile-promo-sub">10% OFF em Açaí</span>
+                </div>
+            </div>
+
+            <!-- APP CONTENT WRAPPER -->
+            <main class="app-content-body">
+
+                <!-- ================= TAB: VENDA / PDV ================= -->
+                <div class="tab-content active" id="venda-tab">
+                    <div class="pdv-layout">
+                        <!-- COLUNA ESQUERDA: CATÁLOGO & PESAGEM -->
+                        <div class="pdv-catalog-col">
+
+                            <!-- CARD DE VENDA POR KG -->
+                            <div class="surface-card weight-sale-card">
+                                <div class="card-header-compact">
+                                    <div class="card-title-group">
+                                        <span class="card-icon-badge"><i data-lucide="scale"></i></span>
+                                        <div>
+                                            <h2 class="card-heading">Venda por Peso (KG)</h2>
+                                            <p class="card-subheading">Açaí e Sorvete artesanal</p>
+                                        </div>
+                                    </div>
+                                    <div class="price-per-kg-badge">
+                                        <span class="price-kg-label">Preço / KG:</span>
+                                        <span class="price-kg-val">R$ <span
+                                                id="weighted-product-price-display">0.00</span></span>
+                                    </div>
+                                </div>
+
+                                <!-- Seletor Açaí vs Sorvete -->
+                                <div class="product-type-selector">
+                                    <button class="quick-add-btn active" data-type="acai" type="button">
+                                        <div class="product-type-icon">
+                                            <img src="image/acai.png" alt="Açaí">
+                                        </div>
+                                        <div class="product-type-info">
+                                            <span class="product-type-name">Açaí</span>
+                                            <span class="product-type-sub">Tigela / Copo</span>
+                                        </div>
+                                    </button>
+
+                                    <button class="quick-add-btn" data-type="sorvete" type="button">
+                                        <div class="product-type-icon">
+                                            <img src="image/sorvete.png" alt="Sorvete">
+                                        </div>
+                                        <div class="product-type-info">
+                                            <span class="product-type-name">Sorvete</span>
+                                            <span class="product-type-sub">Sabores variados</span>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <!-- Entrada de Peso e Botões de Atalho -->
+                                <div class="weight-entry-box">
+                                    <div class="weight-input-wrapper">
+                                        <input type="number" class="weight-input-lg" id="weight-input" placeholder="0"
+                                            min="0" step="1" inputmode="numeric">
+                                        <span class="weight-unit">gramas</span>
+                                    </div>
+
+                                    <div class="weight-qty-wrapper">
+                                        <span class="weight-qty-label">Qtd:</span>
+                                        <div class="weight-qty-stepper">
+                                            <button type="button" class="btn-weight-qty" id="weight-qty-minus"
+                                                title="Diminuir quantidade">−</button>
+                                            <input type="number" class="weight-qty-input" id="weight-qty-input"
+                                                value="1" min="1" max="99" inputmode="numeric">
+                                            <button type="button" class="btn-weight-qty" id="weight-qty-plus"
+                                                title="Aumentar quantidade">+</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="calculated-preview-box">
+                                        <span class="calc-label">Total Calculado</span>
+                                        <div class="calc-val">R$ <span id="calculated-price">0.00</span></div>
+                                    </div>
+
+                                    <button id="add-to-cart" class="touch-btn btn-primary btn-add-weight" type="button">
+                                        <i data-lucide="plus"></i>
+                                        <span>Adicionar Item</span>
+                                    </button>
+                                </div>
+
+                                <!-- Atalhos rápidos de gramatura -->
+                                <div class="weight-presets-bar">
+                                    <span class="presets-label">Atalhos:</span>
+                                    <div class="presets-buttons" id="weight-presets-container"></div>
+                                    <button type="button" class="preset-edit-btn" id="open-weight-presets-modal-btn"
+                                        title="Configurar atalhos de peso">
+                                        <i data-lucide="sliders-horizontal"></i>
+                                        <span>Editar</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- CATÁLOGO DE PRODUTOS RÁPIDOS & BEBIDAS -->
+                            <div class="surface-card catalog-card">
+                                <div class="catalog-header">
+                                    <div class="search-input-wrapper">
+                                        <i data-lucide="search" class="search-icon"></i>
+                                        <input type="search" id="product-search" class="search-input-field"
+                                            placeholder="Buscar produto por nome..." autocomplete="off">
+                                    </div>
+                                    <div class="products-categories-pills" id="products-categories-list"></div>
+                                </div>
+
+                                <!-- Grade de Produtos com Scroll Interno -->
+                                <div class="catalog-scroll-area">
+                                    <!-- Seção de Bebidas / Itens Rápidos -->
+                                    <div class="quick-drinks-section" id="quick-drinks-section">
+                                        <div class="section-micro-title">
+                                            <i data-lucide="cup-soda"></i>
+                                            <span>Bebidas e Adicionais Rápidos</span>
+                                        </div>
+                                        <div class="quick-add-buttons"></div>
+                                    </div>
+
+                                    <!-- Grid de Outros Produtos -->
+                                    <div class="section-micro-title" style="margin-top: 10px;">
+                                        <i data-lucide="layout-grid"></i>
+                                        <span>Vitrine de Produtos</span>
+                                    </div>
+                                    <div class="products-grid" id="products-grid"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- COLUNA DIREITA: CARRINHO FIXO & CHECKOUT -->
+                        <div class="pdv-checkout-col">
+                            <div class="surface-card checkout-card">
+
+                                <!-- Cabeçalho do Carrinho -->
+                                <div class="checkout-card-header">
+                                    <div class="checkout-header-title">
+                                        <i data-lucide="shopping-bag"></i>
+                                        <span>Carrinho de Vendas</span>
+                                    </div>
+                                    <button class="btn-clear-cart" id="cancel-sale" title="Cancelar / Limpar Carrinho"
+                                        type="button">
+                                        <i data-lucide="trash-2"></i>
+                                        <span>Limpar</span>
+                                    </button>
+                                </div>
+
+                                <!-- Itens do Carrinho (Scroll Interno) -->
+                                <div class="cart-items-wrapper" id="cart-items">
+                                    <div class="empty-state-modern">
+                                        <div class="empty-icon"><i data-lucide="shopping-cart"></i></div>
+                                        <div class="empty-text">Nenhum item adicionado</div>
+                                        <div class="empty-sub">Selecione o peso ou clique em um produto</div>
+                                    </div>
+                                </div>
+
+                                <!-- Tipo de Venda: Balcão vs Entrega -->
+                                <div class="delivery-toggle-container">
+                                    <div class="delivery-mode-selector" id="delivery-mode-selector">
+                                        <button class="delivery-mode-btn active" data-mode="balcao" type="button">
+                                            <i data-lucide="store"></i>
+                                            <span>Balcão</span>
+                                        </button>
+                                        <button class="delivery-mode-btn" data-mode="entrega" type="button">
+                                            <i data-lucide="truck"></i>
+                                            <span>Entrega</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Campos de Entrega (Colapsável) -->
+                                    <div class="delivery-info-section" id="delivery-info-section"
+                                        style="display: none;">
+                                        <div class="form-row-2">
+                                            <input type="text" id="delivery-customer-name" class="admin-input-styled"
+                                                placeholder="Nome do Cliente">
+                                            <input type="number" id="delivery-fee" class="admin-input-styled"
+                                                placeholder="Taxa Entrega (R$)" min="0" step="0.01">
+                                        </div>
+                                        <input type="text" id="delivery-customer-address" class="admin-input-styled"
+                                            placeholder="Endereço de Entrega (Rua, Nº, Bairro)">
+                                    </div>
+                                </div>
+
+                                <!-- Resumo Financeiro do Carrinho -->
+                                <div class="cart-financial-summary">
+                                    <div class="summary-line">
+                                        <span class="summary-label">Subtotal:</span>
+                                        <span class="summary-val" id="subtotal">R$ 0,00</span>
+                                    </div>
+                                    <div class="summary-line total-highlight">
+                                        <span class="summary-label">TOTAL:</span>
+                                        <span class="summary-val total-val" id="total">R$ 0,00</span>
+                                    </div>
+                                </div>
+
+                                <!-- Opções de Pagamento -->
+                                <div class="payment-section-box">
+                                    <div class="payment-section-title">Forma de Pagamento</div>
+                                    <div class="payment-options-grid">
+                                        <div class="payment-option" data-method="cash">
+                                            <span class="payment-opt-icon"><i data-lucide="banknote"></i></span>
+                                            <span class="payment-opt-label">Dinheiro</span>
+                                        </div>
+                                        <div class="payment-option" data-method="card">
+                                            <span class="payment-opt-icon"><i data-lucide="credit-card"></i></span>
+                                            <span class="payment-opt-label">Cartão</span>
+                                        </div>
+                                        <div class="payment-option" data-method="pix">
+                                            <span class="payment-opt-icon"><i data-lucide="qr-code"></i></span>
+                                            <span class="payment-opt-label">PIX</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Entrada de Dinheiro Recebido e Troco -->
+                                    <div class="cash-input-box" id="cash-input" style="display: none;">
+                                        <div class="cash-input-row">
+                                            <label for="cash-received">Valor Recebido (R$):</label>
+                                            <input type="number" id="cash-received" class="admin-input-styled"
+                                                placeholder="0.00" step="0.01" inputmode="decimal">
+                                        </div>
+                                        <!-- Botões de atalho de dinheiro -->
+                                        <div class="cash-presets-row" id="cash-presets-row">
+                                            <button type="button" class="cash-preset-btn"
+                                                data-preset="exact">Exato</button>
+                                            <button type="button" class="cash-preset-btn" data-preset="20">R$
+                                                20</button>
+                                            <button type="button" class="cash-preset-btn" data-preset="50">R$
+                                                50</button>
+                                            <button type="button" class="cash-preset-btn" data-preset="100">R$
+                                                100</button>
+                                        </div>
+                                        <div class="change-display-pill" id="change-display" style="display: none;">
+                                            <span>Troco:</span>
+                                            <strong class="change-amount-val">R$ <span
+                                                    id="change-amount">0,00</span></strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Botões de Ação do PDV -->
+                                <div class="checkout-actions-group">
+                                    <button id="finish-sale" class="touch-btn btn-success btn-finish-main"
+                                        type="button">
+                                        <i data-lucide="check-circle-2"></i>
+                                        <span>Finalizar Venda</span>
+                                    </button>
+
+                                    <button id="confirm-payment" class="touch-btn btn-success btn-confirm-pay"
+                                        style="display: none;" type="button">
+                                        <i data-lucide="check-check"></i>
+                                        <span>Confirmar Pagamento</span>
+                                    </button>
+
+                                    <div class="secondary-actions-row">
+                                        <button id="hold-sale" class="touch-btn btn-warning" type="button"
+                                            title="Salvar pedido sem receber agora">
+                                            <i data-lucide="clipboard-plus"></i>
+                                            <span>Comanda / Posterior</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: CAIXA ================= -->
+                <div class="tab-content" id="caixa-tab">
+                    <div class="view-container-narrow">
+                        <!-- ESTADO 1: ABERTURA DE CAIXA -->
+                        <div id="cash-register-opening" class="surface-card cash-opening-card" style="display: none;">
+                            <div class="card-header-styled">
+                                <div class="header-icon-circle primary"><i data-lucide="vault"></i></div>
+                                <div>
+                                    <h2 class="view-heading">Abertura de Caixa</h2>
+                                    <p class="view-subheading">Informe os valores em cédulas e moedas disponíveis na
+                                        gaveta para iniciar o expediente.</p>
+                                </div>
+                            </div>
+
+                            <div class="opening-inputs-grid">
+                                <div class="form-group-styled">
+                                    <label for="opening-bills">
+                                        <span class="label-icon"><i data-lucide="banknote"></i></span>
+                                        <span>Total em Cédulas (R$)</span>
+                                    </label>
+                                    <input type="number" id="opening-bills" class="admin-input-styled"
+                                        placeholder="0.00" step="0.01" inputmode="decimal">
+                                </div>
+
+                                <div class="form-group-styled">
+                                    <label for="opening-coins">
+                                        <span class="label-icon"><i data-lucide="coins"></i></span>
+                                        <span>Total em Moedas (R$)</span>
+                                    </label>
+                                    <input type="number" id="opening-coins" class="admin-input-styled"
+                                        placeholder="0.00" step="0.01" inputmode="decimal">
+                                </div>
+                            </div>
+
+                            <div class="opening-total-banner">
+                                <span>Fundo Inicial Total:</span>
+                                <strong id="opening-total-display">R$ 0,00</strong>
+                            </div>
+
+                            <button id="btn-open-register" class="touch-btn btn-success btn-block-lg" type="button">
+                                <i data-lucide="key-round"></i>
+                                <span>Confirmar Abertura de Caixa</span>
+                            </button>
+                        </div>
+
+                        <!-- ESTADO 2: DASHBOARD DE CAIXA ABERTO -->
+                        <div id="cash-register-dashboard" class="surface-card cash-dashboard-card"
+                            style="display: none;">
+                            <div class="dashboard-topbar">
+                                <div>
+                                    <h2 class="view-heading">Controle de Caixa</h2>
+                                    <p class="view-subheading">Resumo das movimentações e saldo em gaveta do dia.</p>
+                                </div>
+                                <span class="status-badge-styled open">
+                                    <span class="status-dot-mini"></span>
+                                    <span>CAIXA ABERTO</span>
+                                </span>
+                            </div>
+
+                            <!-- Grid de Métricas Principais -->
+                            <div class="cash-metrics-grid">
+                                <div class="cash-metric-card primary main-balance">
+                                    <div class="metric-icon-bg"><i data-lucide="wallet"></i></div>
+                                    <div class="metric-label">Saldo Atual em Gaveta (Sistema)</div>
+                                    <div class="metric-value-lg" id="dash-current-balance">R$ 0,00</div>
+                                    <div class="metric-desc">Fundo Inicial + Entradas Dinheiro − Despesas</div>
+                                </div>
+
+                                <div class="cash-metric-card info">
+                                    <div class="metric-icon-bg"><i data-lucide="arrow-down-to-dot"></i></div>
+                                    <div class="metric-label">Fundo Inicial</div>
+                                    <div class="metric-value" id="dash-opening-balance">R$ 0,00</div>
+                                    <div class="metric-desc">Cédulas + Moedas</div>
+                                </div>
+
+                                <div class="cash-metric-card success">
+                                    <div class="metric-icon-bg"><i data-lucide="trending-up"></i></div>
+                                    <div class="metric-label">Vendas (Dinheiro)</div>
+                                    <div class="metric-value" id="dash-cash-sales">R$ 0,00</div>
+                                    <div class="metric-desc">Entradas em espécie</div>
+                                </div>
+
+                                <div class="cash-metric-card danger">
+                                    <div class="metric-icon-bg"><i data-lucide="trending-down"></i></div>
+                                    <div class="metric-label">Saídas / Despesas</div>
+                                    <div class="metric-value" id="dash-expenses">R$ 0,00</div>
+                                    <div class="metric-desc">Retiradas do caixa</div>
+                                </div>
+                            </div>
+
+                            <!-- Métricas de Outros Recebimentos -->
+                            <div class="electronic-payments-card">
+                                <div class="section-micro-title">
+                                    <i data-lucide="credit-card"></i>
+                                    <span>Recebimentos Eletrônicos (Não entram na gaveta física)</span>
+                                </div>
+                                <div class="electronic-payments-grid">
+                                    <div class="elec-card">
+                                        <span class="elec-icon"><i data-lucide="credit-card"></i></span>
+                                        <span class="elec-label">Cartão:</span>
+                                        <strong class="elec-val" id="dash-card-total">R$ 0,00</strong>
+                                    </div>
+                                    <div class="elec-card">
+                                        <span class="elec-icon"><i data-lucide="qr-code"></i></span>
+                                        <span class="elec-label">PIX:</span>
+                                        <strong class="elec-val" id="dash-pix-total">R$ 0,00</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ações do Caixa -->
+                            <div class="cash-actions-bar">
+                                <button id="btn-edit-open-register" class="touch-btn btn-secondary" type="button"
+                                    title="Editar Fundo Inicial">
+                                    <i data-lucide="edit-3"></i>
+                                    <span>Editar Fundo Inicial</span>
+                                </button>
+                                <button id="btn-close-register" class="touch-btn btn-danger" type="button">
+                                    <i data-lucide="lock"></i>
+                                    <span>Fechar Caixa & Encerrar Turno</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- HISTÓRICO DE SESSÕES / TURNOS DE CAIXA DE HOJE -->
+                        <div class="surface-card cash-sessions-card" style="margin-top: 1.25rem;">
+                            <div class="cash-sessions-header">
+                                <h3 class="session-history-title">
+                                    <div class="session-header-icon-box">
+                                        <i data-lucide="history"></i>
+                                    </div>
+                                    <div>
+                                        <span class="session-header-main-text">Turnos de Caixa de Hoje</span>
+                                        <small class="session-header-sub-text">Histórico de aberturas e fechamentos</small>
+                                    </div>
+                                </h3>
+                                <span id="cash-sessions-count-label" class="cash-sessions-counter">0 turno(s)</span>
+                            </div>
+                            <div id="cash-sessions-list" class="cash-sessions-list">
+                                <div class="cash-sessions-empty">
+                                    <i data-lucide="clock"></i>
+                                    <span>Nenhum turno registrado hoje ainda.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: COMANDAS ================= -->
+                <div class="tab-content" id="comandas-tab">
+                    <div class="view-container-full">
+                        <div class="view-header-row">
+                            <div>
+                                <h2 class="view-heading">Comandas em Aberto</h2>
+                                <p class="view-subheading">Gerencie pedidos com pagamento posterior, mesas e entregas em
+                                    andamento.</p>
+                            </div>
+                        </div>
+
+                        <div class="open-orders-grid-modern" id="open-orders-grid">
+                            <div class="empty-state-modern" style="grid-column: 1 / -1;">
+                                <div class="empty-icon"><i data-lucide="clipboard-list"></i></div>
+                                <div class="empty-text">Nenhuma comanda em aberto</div>
+                                <div class="empty-sub">Para salvar uma comanda, adicione itens no PDV e clique em
+                                    "Comanda / Posterior"</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: PRODUTOS ================= -->
+                <div class="tab-content" id="produtos-tab">
+                    <div class="view-container-full">
+                        <div class="view-header-row">
+                            <div>
+                                <h2 class="view-heading">Catálogo & Gestão de Produtos</h2>
+                                <p class="view-subheading">Gerencie itens da vitrine, cadastre novos produtos e atualize
+                                    preços.</p>
+                            </div>
+                            <div>
+                                <button id="open-add-product-modal-btn" class="touch-btn btn-primary" type="button">
+                                    <i data-lucide="plus-circle"></i>
+                                    <span>Novo Produto</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="surface-card">
+                            <div class="products-tab-toolbar">
+                                <div class="search-input-wrapper flex-1">
+                                    <i data-lucide="search" class="search-icon"></i>
+                                    <input type="search" id="product-view-search" class="search-input-field"
+                                        placeholder="Buscar produto por nome..." autocomplete="off">
+                                </div>
+                                <div class="product-view-count-badge" id="product-view-count">
+                                    <span id="product-count-number">0</span> produtos
+                                </div>
+                            </div>
+
+                            <!-- Pílulas de filtro de categoria -->
+                            <div class="product-view-category-pills" id="product-view-category-filters">
+                                <!-- Preenchido dinamicamente -->
+                            </div>
+
+                            <!-- Grid Geral de Produtos com scroll suave -->
+                            <div class="products-catalog-view-grid" id="products-catalog-full-grid">
+                                <!-- Gerado dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: HISTÓRICO DE VENDAS ================= -->
+                <div class="tab-content" id="historico-tab">
+                    <div class="view-container-full">
+                        <div class="view-header-row">
+                            <div>
+                                <h2 class="view-heading">Histórico de Vendas</h2>
+                                <p class="view-subheading">Consulte vendas finalizadas, reimprima comprovantes e exporte
+                                    relatórios.</p>
+                            </div>
+
+                            <div class="history-controls-bar">
+                                <div class="date-picker-group">
+                                    <div class="custom-date-picker-wrapper" id="history-date-picker-wrapper">
+                                        <button type="button" class="custom-date-trigger" id="history-date-trigger"
+                                            aria-haspopup="dialog" aria-expanded="false"
+                                            title="Clique para selecionar uma data">
+                                            <span class="date-trigger-content">
+                                                <i data-lucide="calendar" class="date-trigger-icon"></i>
+                                                <span class="date-trigger-text" id="history-date-text">25/08/2026</span>
+                                            </span>
+                                            <i data-lucide="chevron-down" class="date-trigger-chevron"></i>
+                                        </button>
+                                        <input type="hidden" class="date-selector-styled" id="history-date"
+                                            value="2026-08-25">
+
+                                        <!-- Popover do Calendário Diário -->
+                                        <div class="custom-date-popover" id="history-date-popover" role="dialog"
+                                            aria-modal="false">
+                                            <div class="date-picker-header">
+                                                <button type="button" class="picker-nav-btn picker-prev-month"
+                                                    title="Mês Anterior">
+                                                    <i data-lucide="chevron-left"></i>
+                                                </button>
+                                                <div class="picker-month-year-display">
+                                                    <span class="picker-month-name">Agosto</span>
+                                                    <span class="picker-year-name">2026</span>
+                                                </div>
+                                                <button type="button" class="picker-nav-btn picker-next-month"
+                                                    title="Próximo Mês">
+                                                    <i data-lucide="chevron-right"></i>
+                                                </button>
+                                            </div>
+
+                                            <div class="date-picker-weekdays">
+                                                <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                                            </div>
+
+                                            <div class="date-picker-days-grid" id="history-date-grid"></div>
+
+                                            <div class="date-picker-footer">
+                                                <button type="button" class="picker-quick-btn picker-btn-yesterday"
+                                                    title="Selecionar ontem">
+                                                    <i data-lucide="clock-arrow-down"></i>
+                                                    <span>Ontem</span>
+                                                </button>
+                                                <button type="button" class="picker-quick-btn primary picker-btn-today"
+                                                    title="Selecionar hoje">
+                                                    <i data-lucide="calendar-check-2"></i>
+                                                    <span>Hoje</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="export-history-pdf" class="touch-btn btn-secondary" type="button">
+                                    <i data-lucide="file-down"></i>
+                                    <span>Exportar PDF do Dia</span>
+                                </button>
+                                <button id="add-manual-sale-btn" class="touch-btn btn-primary" type="button">
+                                    <i data-lucide="plus"></i>
+                                    <span>Venda Manual</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Resumo Financeiro do Dia -->
+                        <div class="history-summary-cards-grid" id="history-summary" style="display: none;">
+                            <div class="history-metric-card primary">
+                                <div class="hist-label">Faturamento Total do Dia</div>
+                                <div class="hist-val-lg" id="history-grand-total">R$ 0,00</div>
+                                <div class="hist-sub">Produtos + Entregas</div>
+                            </div>
+                            <div class="history-metric-card">
+                                <div class="hist-label">Vendas em Produtos</div>
+                                <div class="hist-val" id="history-products-total">R$ 0,00</div>
+                            </div>
+                            <div class="history-metric-card">
+                                <div class="hist-label">Taxas de Entrega</div>
+                                <div class="hist-val" id="history-delivery-total">R$ 0,00</div>
+                            </div>
+                            <div class="history-metric-card">
+                                <div class="hist-label">Por Pagamento</div>
+                                <div class="hist-breakdown">
+                                    <span><i data-lucide="banknote" class="mini-icon"></i> Dinheiro: <strong
+                                            id="history-cash-total">R$ 0,00</strong></span>
+                                    <span><i data-lucide="credit-card" class="mini-icon"></i> Cartão: <strong
+                                            id="history-card-total">R$ 0,00</strong></span>
+                                    <span><i data-lucide="qr-code" class="mini-icon"></i> PIX: <strong
+                                            id="history-pix-total">R$ 0,00</strong></span>
+                                </div>
+                            </div>
+                            <div class="history-metric-card danger">
+                                <div class="hist-label">Total em Despesas</div>
+                                <div class="hist-val" id="history-expenses-total">R$ 0,00</div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Vendas com Scroll Interno -->
+                        <div class="surface-card">
+                            <div class="sales-history-list-wrapper" id="sales-history">
+                                <div class="empty-state-modern">
+                                    <div class="empty-icon"><i data-lucide="history"></i></div>
+                                    <div class="empty-text">Nenhuma venda para esta data</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: DESPESAS ================= -->
+                <div class="tab-content" id="despesas-tab">
+                    <div class="view-container-full">
+                        <div class="expenses-layout-grid">
+                            <!-- Coluna Esquerda: Cadastro de Despesa -->
+                            <div class="surface-card">
+                                <div class="card-header-styled">
+                                    <div class="header-icon-circle danger"><i data-lucide="arrow-down-right"></i></div>
+                                    <div>
+                                        <h2 class="view-heading">Registrar Despesa</h2>
+                                        <p class="view-subheading">Saídas e retiradas do caixa diário.</p>
+                                    </div>
+                                </div>
+
+                                <div id="add-expense-form" class="expense-form-styled">
+                                    <div class="form-group-styled">
+                                        <label for="new-expense-name">Nome da Despesa *</label>
+                                        <input type="text" id="new-expense-name" class="admin-input-styled"
+                                            placeholder="Ex: Gás, Embalagens, Frutas, Almoço">
+                                    </div>
+
+                                    <div class="form-group-styled">
+                                        <label for="new-expense-value">Valor da Despesa (R$) *</label>
+                                        <input type="number" id="new-expense-value" class="admin-input-styled"
+                                            placeholder="0.00" step="0.01" inputmode="decimal">
+                                    </div>
+
+                                    <div class="form-group-styled">
+                                        <label for="new-expense-desc">Observação / Descrição (Opcional)</label>
+                                        <input type="text" id="new-expense-desc" class="admin-input-styled"
+                                            placeholder="Detalhes da despesa">
+                                    </div>
+
+                                    <button id="add-new-expense-btn" class="touch-btn btn-danger btn-block-lg"
+                                        type="button">
+                                        <i data-lucide="save"></i>
+                                        <span>Salvar Despesa</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Coluna Direita: Histórico de Despesas do Dia -->
+                            <div class="surface-card">
+                                <div class="expenses-history-header">
+                                    <div>
+                                        <h3 class="view-heading" style="font-size: 1.15rem;">Despesas Registradas</h3>
+                                        <p class="view-subheading">Filtrar por data:</p>
+                                    </div>
+                                    <div class="custom-date-picker-wrapper" id="expense-date-picker-wrapper">
+                                        <button type="button" class="custom-date-trigger" id="expense-date-trigger"
+                                            aria-haspopup="dialog" aria-expanded="false"
+                                            title="Clique para selecionar uma data">
+                                            <span class="date-trigger-content">
+                                                <i data-lucide="calendar" class="date-trigger-icon"></i>
+                                                <span class="date-trigger-text" id="expense-date-text">25/08/2026</span>
+                                            </span>
+                                            <i data-lucide="chevron-down" class="date-trigger-chevron"></i>
+                                        </button>
+                                        <input type="hidden" class="date-selector-styled" id="expense-date"
+                                            value="2026-08-25">
+
+                                        <!-- Popover do Calendário Diário -->
+                                        <div class="custom-date-popover" id="expense-date-popover" role="dialog"
+                                            aria-modal="false">
+                                            <div class="date-picker-header">
+                                                <button type="button" class="picker-nav-btn picker-prev-month"
+                                                    title="Mês Anterior">
+                                                    <i data-lucide="chevron-left"></i>
+                                                </button>
+                                                <div class="picker-month-year-display">
+                                                    <span class="picker-month-name">Agosto</span>
+                                                    <span class="picker-year-name">2026</span>
+                                                </div>
+                                                <button type="button" class="picker-nav-btn picker-next-month"
+                                                    title="Próximo Mês">
+                                                    <i data-lucide="chevron-right"></i>
+                                                </button>
+                                            </div>
+
+                                            <div class="date-picker-weekdays">
+                                                <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                                            </div>
+
+                                            <div class="date-picker-days-grid" id="expense-date-grid"></div>
+
+                                            <div class="date-picker-footer">
+                                                <button type="button" class="picker-quick-btn picker-btn-yesterday"
+                                                    title="Selecionar ontem">
+                                                    <i data-lucide="clock-arrow-down"></i>
+                                                    <span>Ontem</span>
+                                                </button>
+                                                <button type="button" class="picker-quick-btn primary picker-btn-today"
+                                                    title="Selecionar hoje">
+                                                    <i data-lucide="calendar-check-2"></i>
+                                                    <span>Hoje</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="expenses-total-banner" id="expenses-summary" style="display: none;">
+                                    <span>Total de Despesas do Dia:</span>
+                                    <strong id="expenses-total-today">R$ 0,00</strong>
+                                </div>
+
+                                <div class="expenses-scroll-list" id="expenses-history-list">
+                                    <div class="empty-state-modern">
+                                        <div class="empty-icon"><i data-lucide="arrow-down-right"></i></div>
+                                        <div class="empty-text">Nenhuma despesa para esta data</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: ADMINISTRATIVO ================= -->
+                <div class="tab-content" id="admin-tab">
+                    <div class="view-container-full">
+
+                        <!-- PAINEL ADMINISTRATIVO DIRETO -->
+                        <div class="admin-controls-panel" id="admin-controls-panel">
+                            <div class="surface-card admin-top-nav-card">
+                                <!-- Sub-Abas do Admin -->
+                                <div class="admin-sub-tabs">
+                                    <button class="admin-sub-tab active" data-subtab="produtos" type="button">
+                                        <i data-lucide="scale"></i>
+                                        <span>Preços KG & Balança</span>
+                                    </button>
+                                    <button class="admin-sub-tab" data-subtab="promocoes" type="button">
+                                        <i data-lucide="tag"></i>
+                                        <span>Promoções & Descontos</span>
+                                    </button>
+                                    <button class="admin-sub-tab" data-subtab="relatorios" type="button">
+                                        <i data-lucide="file-bar-chart"></i>
+                                        <span>Relatório Mensal</span>
+                                    </button>
+                                    <button class="admin-sub-tab" data-subtab="config" type="button">
+                                        <i data-lucide="shield-check"></i>
+                                        <span>Segurança & Senha</span>
+                                    </button>
+                                    <button class="admin-sub-tab" data-subtab="equipe" type="button">
+                                        <i data-lucide="users"></i>
+                                        <span>Equipe & Licença</span>
+                                        <span class="admin-tab-pending-badge" id="admin-team-pending-count"
+                                            style="display: none;">0</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- SUB-ABA 1: PREÇOS KG & BALANÇA -->
+                            <div class="admin-sub-content active" id="admin-produtos-content">
+                                <div class="admin-grid-2col">
+                                    <!-- Preços por KG -->
+                                    <div class="surface-card">
+                                        <h3 class="section-subheading">
+                                            <i data-lucide="scale"></i>
+                                            <span>Preço por KG (Açaí e Sorvete)</span>
+                                        </h3>
+                                        <p class="card-subheading" style="margin-bottom: 15px;">Atualize o valor cobrado
+                                            por quilo na balança do PDV.</p>
+
+                                        <div class="form-group-styled">
+                                            <label for="acai-price">Açaí (R$ / KG):</label>
+                                            <div class="input-with-action">
+                                                <input type="number" id="acai-price" class="admin-input-styled"
+                                                    step="0.01" inputmode="decimal">
+                                                <button id="update-acai-price" class="touch-btn btn-primary"
+                                                    type="button">Atualizar Açaí</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group-styled" style="margin-top: 15px;">
+                                            <label for="sorvete-price">Sorvete (R$ / KG):</label>
+                                            <div class="input-with-action">
+                                                <input type="number" id="sorvete-price" class="admin-input-styled"
+                                                    step="0.01" inputmode="decimal">
+                                                <button id="update-sorvete-price" class="touch-btn btn-primary"
+                                                    type="button">Atualizar Sorvete</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Gerenciamento de Atalhos de Peso -->
+                                    <div class="surface-card">
+                                        <h3 class="section-subheading">
+                                            <i data-lucide="sliders-horizontal"></i>
+                                            <span>Atalhos Rápidos de Peso (Balança)</span>
+                                        </h3>
+                                        <p class="card-subheading" style="margin-bottom: 15px;">Configure os botões de
+                                            gramatura rápida exibidos na pesagem do PDV.</p>
+
+                                        <div class="preset-config-box">
+                                            <div class="form-group-styled" style="margin-bottom: 12px;">
+                                                <label for="admin-new-preset-weight">Adicionar Novo Peso (em
+                                                    gramas):</label>
+                                                <div class="input-with-action">
+                                                    <input type="number" id="admin-new-preset-weight"
+                                                        class="admin-input-styled" placeholder="Ex: 180, 350, 600, 800"
+                                                        min="1" step="1" inputmode="numeric">
+                                                    <button id="admin-add-preset-btn" class="touch-btn btn-primary"
+                                                        type="button">Adicionar</button>
+                                                </div>
+                                            </div>
+
+                                            <label
+                                                style="display:block; margin-bottom: 8px; font-weight: 700; font-size: 0.88rem;">Atalhos
+                                                Atuais (clique no ✕ para remover):</label>
+                                            <div class="preset-chips-list" id="admin-preset-chips-container"></div>
+
+                                            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                                <button id="admin-reset-presets-btn" class="touch-btn btn-secondary"
+                                                    type="button">
+                                                    <i data-lucide="rotate-ccw"></i>
+                                                    <span>Restaurar Padrões (150g a 1kg)</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-ABA 2: PROMOÇÕES -->
+                            <div class="admin-sub-content" id="admin-promocoes-content">
+                                <div class="surface-card promo-admin-card">
+                                    <!-- Header da Seção Compacto -->
+                                    <div class="promo-card-header">
+                                        <div class="promo-header-info">
+                                            <div class="promo-icon-badge">
+                                                <i data-lucide="badge-percent"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="promo-title">Gerenciar Promoções & Descontos</h3>
+                                                <p class="promo-subtitle">Configure descontos percentuais automáticos,
+                                                    dias da semana e horários de vigência no PDV.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Switch Principal de Ativação -->
+                                    <div class="promo-master-toggle-card">
+                                        <div class="promo-toggle-left">
+                                            <div class="promo-toggle-icon">
+                                                <i data-lucide="sparkles"></i>
+                                            </div>
+                                            <div>
+                                                <span class="promo-toggle-title">Ativar Desconto Promocional</span>
+                                                <span class="promo-toggle-desc">Aplica o desconto automaticamente na
+                                                    pesagem durante os dias e horários configurados</span>
+                                            </div>
+                                        </div>
+                                        <div class="promo-toggle-right">
+                                            <label class="switch promo-switch">
+                                                <input type="checkbox" id="discount-active-check">
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="discount-controls-wrapper">
+                                        <div id="discount-config-area" class="discount-config-area disabled">
+
+                                            <!-- GRID DE 2 COLUNAS (LAYOUT COMPACTO SEM SCROLL) -->
+                                            <div class="promo-dashboard-grid">
+
+                                                <!-- COLUNA ESQUERDA: VALORES & HORÁRIOS -->
+                                                <div class="promo-grid-col">
+
+                                                    <!-- Seção 1: Porcentagem de Desconto -->
+                                                    <div class="promo-config-section">
+                                                        <div class="promo-section-head">
+                                                            <label class="promo-section-label"
+                                                                for="discount-percentage">
+                                                                <i data-lucide="percent"></i>
+                                                                <span>Porcentagem de Desconto (%)</span>
+                                                            </label>
+                                                        </div>
+
+                                                        <div class="promo-percentage-row">
+                                                            <div class="promo-input-wrapper">
+                                                                <input type="number" id="discount-percentage"
+                                                                    class="promo-input-styled" value="10" min="1"
+                                                                    max="100" placeholder="10">
+                                                                <span class="promo-input-suffix">% OFF</span>
+                                                            </div>
+
+                                                            <div class="promo-quick-pills">
+                                                                <button type="button" class="promo-quick-btn"
+                                                                    data-percent="5">5%</button>
+                                                                <button type="button" class="promo-quick-btn active"
+                                                                    data-percent="10">10%</button>
+                                                                <button type="button" class="promo-quick-btn"
+                                                                    data-percent="15">15%</button>
+                                                                <button type="button" class="promo-quick-btn"
+                                                                    data-percent="20">20%</button>
+                                                                <button type="button" class="promo-quick-btn"
+                                                                    data-percent="25">25%</button>
+                                                                <button type="button" class="promo-quick-btn"
+                                                                    data-percent="30">30%</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Seção 2: Horário de Vigência da Promoção -->
+                                                    <div class="promo-config-section">
+                                                        <div class="promo-section-head">
+                                                            <label class="promo-section-label">
+                                                                <i data-lucide="clock"></i>
+                                                                <span>Horário de Funcionamento</span>
+                                                            </label>
+                                                            <div class="promo-time-mode-pills">
+                                                                <label class="time-mode-pill active"
+                                                                    id="label-time-all-day">
+                                                                    <input type="radio" name="discount-time-mode"
+                                                                        value="all_day" checked
+                                                                        id="discount-time-mode-all">
+                                                                    <span>☀️ Dia Todo</span>
+                                                                </label>
+                                                                <label class="time-mode-pill" id="label-time-custom">
+                                                                    <input type="radio" name="discount-time-mode"
+                                                                        value="custom" id="discount-time-mode-custom">
+                                                                    <span>⏰ Definir Horário</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Seletor de Intervalo de Horário -->
+                                                        <div id="promo-custom-time-box"
+                                                            class="promo-custom-time-box disabled">
+                                                            <div class="promo-time-inputs-row">
+                                                                <div class="promo-time-field">
+                                                                    <label for="discount-start-time">Início:</label>
+                                                                    <div class="time-input-wrap">
+                                                                        <input type="time" id="discount-start-time"
+                                                                            class="promo-time-input" value="10:00">
+                                                                    </div>
+                                                                </div>
+                                                                <span class="promo-time-arrow">até</span>
+                                                                <div class="promo-time-field">
+                                                                    <label for="discount-end-time">Fim:</label>
+                                                                    <div class="time-input-wrap">
+                                                                        <input type="time" id="discount-end-time"
+                                                                            class="promo-time-input" value="21:00">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div id="promo-time-hint" class="promo-time-hint"></div>
+
+                                                            <div class="promo-time-quick-pills">
+                                                                <button type="button" class="promo-time-preset-btn"
+                                                                    data-start="10:00" data-end="21:00">10h às 21h
+                                                                    (Dia/Noite)</button>
+                                                                <button type="button" class="promo-time-preset-btn"
+                                                                    data-start="11:00" data-end="15:00">11h às 15h
+                                                                    (Almoço)</button>
+                                                                <button type="button" class="promo-time-preset-btn"
+                                                                    data-start="13:00" data-end="18:00">13h às 18h
+                                                                    (Tarde)</button>
+                                                                <button type="button" class="promo-time-preset-btn"
+                                                                    data-start="18:00" data-end="22:00">18h às 22h
+                                                                    (Noite)</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+
+                                                <!-- COLUNA DIREITA: DIAS & PRODUTOS -->
+                                                <div class="promo-grid-col">
+
+                                                    <!-- Seção 3: Dias da Semana -->
+                                                    <div class="promo-config-section">
+                                                        <div class="promo-section-head">
+                                                            <label class="promo-section-label">
+                                                                <i data-lucide="calendar"></i>
+                                                                <span>Dias da Semana Ativos</span>
+                                                            </label>
+                                                            <div class="promo-quick-days-actions">
+                                                                <button type="button" class="promo-action-link"
+                                                                    id="btn-select-all-days">Todos</button>
+                                                                <span class="divider-dot">&bull;</span>
+                                                                <button type="button" class="promo-action-link"
+                                                                    id="btn-select-weekdays">Seg a Sex</button>
+                                                                <span class="divider-dot">&bull;</span>
+                                                                <button type="button" class="promo-action-link"
+                                                                    id="btn-select-weekends">Fins de Semana</button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="weekday-selector-grid">
+                                                            <label class="weekday-chip" title="Domingo">
+                                                                <input type="checkbox" name="discount-day" value="0"
+                                                                    class="weekday-checkbox">
+                                                                <span class="weekday-chip-inner">
+                                                                    <span class="day-abbr">Dom</span>
+                                                                    <span class="day-name">Domingo</span>
+                                                                </span>
+                                                            </label>
+                                                            <label class="weekday-chip" title="Segunda-feira">
+                                                                <input type="checkbox" name="discount-day" value="1"
+                                                                    class="weekday-checkbox">
+                                                                <span class="weekday-chip-inner">
+                                                                    <span class="day-abbr">Seg</span>
+                                                                    <span class="day-name">Segunda</span>
+                                                                </span>
+                                                            </label>
+                                                            <label class="weekday-chip" title="Terça-feira">
+                                                                <input type="checkbox" name="discount-day" value="2"
+                                                                    class="weekday-checkbox">
+                                                                <span class="weekday-chip-inner">
+                                                                    <span class="day-abbr">Ter</span>
+                                                                    <span class="day-name">Terça</span>
+                                                                </span>
+                                                            </label>
+                                                            <label class="weekday-chip" title="Quarta-feira">
+                                                                <input type="checkbox" name="discount-day" value="3"
+                                                                    class="weekday-checkbox">
+                                                                <span class="weekday-chip-inner">
+                                                                    <span class="day-abbr">Qua</span>
+                                                                    <span class="day-name">Quarta</span>
+                                                                </span>
+                                                            </label>
+                                                            <label class="weekday-chip" title="Quinta-feira">
+                                                                <input type="checkbox" name="discount-day" value="4"
+                                                                    class="weekday-checkbox">
+                                                                <span class="weekday-chip-inner">
+                                                                    <span class="day-abbr">Qui</span>
+                                                                    <span class="day-name">Quinta</span>
+                                                                </span>
+                                                            </label>
+                                                            <label class="weekday-chip" title="Sexta-feira">
+                                                                <input type="checkbox" name="discount-day" value="5"
+                                                                    class="weekday-checkbox">
+                                                                <span class="weekday-chip-inner">
+                                                                    <span class="day-abbr">Sex</span>
+                                                                    <span class="day-name">Sexta</span>
+                                                                </span>
+                                                            </label>
+                                                            <label class="weekday-chip" title="Sábado">
+                                                                <input type="checkbox" name="discount-day" value="6"
+                                                                    class="weekday-checkbox">
+                                                                <span class="weekday-chip-inner">
+                                                                    <span class="day-abbr">Sáb</span>
+                                                                    <span class="day-name">Sábado</span>
+                                                                </span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Seção 4: Produtos Elegíveis -->
+                                                    <div class="promo-config-section">
+                                                        <div class="promo-section-head">
+                                                            <label class="promo-section-label">
+                                                                <i data-lucide="shopping-bag"></i>
+                                                                <span>Produtos Elegíveis</span>
+                                                            </label>
+                                                            <span class="promo-section-help">Marque os produtos com
+                                                                desconto</span>
+                                                        </div>
+
+                                                        <div class="promo-targets-grid">
+                                                            <label class="promo-target-card" for="discount-target-acai">
+                                                                <div class="promo-target-check">
+                                                                    <input type="checkbox" id="discount-target-acai">
+                                                                    <span class="promo-checkbox-custom">
+                                                                        <i data-lucide="check"></i>
+                                                                    </span>
+                                                                </div>
+                                                                <div class="promo-target-details">
+                                                                    <div class="promo-target-title-row">
+                                                                        <span class="promo-target-name">Açaí por
+                                                                            KG</span>
+                                                                        <span class="promo-target-badge">Pesagem</span>
+                                                                    </div>
+                                                                    <span class="promo-target-desc">Aplica na pesagem de
+                                                                        Açaí</span>
+                                                                </div>
+                                                            </label>
+
+                                                            <label class="promo-target-card"
+                                                                for="discount-target-sorvete">
+                                                                <div class="promo-target-check">
+                                                                    <input type="checkbox" id="discount-target-sorvete">
+                                                                    <span class="promo-checkbox-custom">
+                                                                        <i data-lucide="check"></i>
+                                                                    </span>
+                                                                </div>
+                                                                <div class="promo-target-details">
+                                                                    <div class="promo-target-title-row">
+                                                                        <span class="promo-target-name">Sorvete por
+                                                                            KG</span>
+                                                                        <span class="promo-target-badge">Pesagem</span>
+                                                                    </div>
+                                                                    <span class="promo-target-desc">Aplica na pesagem de
+                                                                        Sorvete</span>
+                                                                </div>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
+                                            <!-- RODAPÉ: STATUS EM TEMPO REAL & BOTÃO SALVAR -->
+                                            <div class="promo-bottom-actions-row">
+                                                <div id="promo-current-status-banner" class="promo-status-banner"></div>
+                                                <button id="save-discount-config"
+                                                    class="touch-btn btn-primary promo-save-btn" type="button">
+                                                    <i data-lucide="save"></i>
+                                                    <span>Salvar Configurações</span>
+                                                </button>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-ABA 3: RELATÓRIOS -->
+                            <div class="admin-sub-content" id="admin-relatorios-content">
+                                <div class="surface-card">
+                                    <h3 class="section-subheading">
+                                        <i data-lucide="file-bar-chart"></i>
+                                        <span>Relatório Financeiro Mensal</span>
+                                    </h3>
+                                    <p class="card-subheading" style="margin-bottom: 15px;">Gere um documento executivo
+                                        em PDF com o balanço completo do mês. <em>(Exige senha de segurança)</em></p>
+
+                                    <div class="report-monthly-form">
+                                        <div class="form-group-styled">
+                                            <label id="report-month-label">Selecione o Mês e Ano:</label>
+                                            <div class="custom-month-picker-wrapper" id="custom-month-picker-wrapper">
+                                                <button type="button" class="custom-month-trigger"
+                                                    id="custom-month-trigger" aria-haspopup="dialog"
+                                                    aria-expanded="false"
+                                                    aria-labelledby="report-month-label month-trigger-text">
+                                                    <span class="month-trigger-content">
+                                                        <i data-lucide="calendar" class="month-trigger-icon"></i>
+                                                        <span class="month-trigger-text" id="month-trigger-text">Agosto
+                                                            de 2026</span>
+                                                    </span>
+                                                    <i data-lucide="chevron-down" class="month-trigger-chevron"></i>
+                                                </button>
+                                                <!-- Input oculto para manter compatibilidade com toda a lógica de exportação -->
+                                                <input type="hidden" id="report-month-select" value="2026-08">
+
+                                                <!-- Popover do Calendário com Motion Design -->
+                                                <div class="custom-month-popover" id="custom-month-popover"
+                                                    role="dialog" aria-modal="false" aria-label="Seletor de Mês e Ano">
+                                                    <div class="month-picker-header">
+                                                        <button type="button" class="picker-nav-btn"
+                                                            id="picker-prev-year" title="Ano Anterior"
+                                                            aria-label="Ano anterior">
+                                                            <i data-lucide="chevron-left"></i>
+                                                        </button>
+                                                        <div class="picker-year-display" id="picker-year-display">
+                                                            <span id="picker-current-year">2026</span>
+                                                        </div>
+                                                        <button type="button" class="picker-nav-btn"
+                                                            id="picker-next-year" title="Próximo Ano"
+                                                            aria-label="Próximo ano">
+                                                            <i data-lucide="chevron-right"></i>
+                                                        </button>
+                                                    </div>
+
+                                                    <div class="month-picker-grid" id="month-picker-grid">
+                                                        <!-- Gerado dinamicamente via JS -->
+                                                    </div>
+
+                                                    <div class="month-picker-footer">
+                                                        <button type="button" class="picker-quick-btn"
+                                                            id="picker-btn-prev-month" title="Selecionar mês anterior">
+                                                            <i data-lucide="history"></i>
+                                                            <span>Mês Anterior</span>
+                                                        </button>
+                                                        <button type="button" class="picker-quick-btn primary"
+                                                            id="picker-btn-current-month" title="Selecionar mês atual">
+                                                            <i data-lucide="sparkles"></i>
+                                                            <span>Este Mês</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button id="generate-monthly-report-pdf"
+                                            class="touch-btn btn-primary btn-block-lg" type="button"
+                                            style="margin-top: 14px;">
+                                            <i data-lucide="file-down"></i>
+                                            <span>Gerar PDF do Mês</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-ABA 4: CONFIGURAÇÕES / SEGURANÇA -->
+                            <div class="admin-sub-content" id="admin-config-content">
+                                <div class="surface-card">
+                                    <h3 class="section-subheading">
+                                        <i data-lucide="shield-check"></i>
+                                        <span>Senha de Segurança (Ações Restritas)</span>
+                                    </h3>
+                                    <p class="card-subheading" style="margin-bottom: 15px;">Esta senha de 4 dígitos é
+                                        exigida para <strong>excluir vendas do histórico</strong> e para
+                                        <strong>exportar o relatório financeiro mensal</strong>.</p>
+
+                                    <div class="admin-security-form-box" style="max-width: 440px;">
+                                        <div class="form-group-styled" style="margin-bottom: 12px;">
+                                            <label for="current-delete-password">Senha Atual (4 dígitos): *</label>
+                                            <input type="password" id="current-delete-password"
+                                                class="admin-input-styled" maxlength="4"
+                                                placeholder="Digite a senha atual" autocomplete="off"
+                                                inputmode="numeric">
+                                        </div>
+
+                                        <div class="form-group-styled" style="margin-bottom: 12px;">
+                                            <label for="new-delete-password">Nova Senha (4 dígitos numéricos): *</label>
+                                            <input type="password" id="new-delete-password" class="admin-input-styled"
+                                                maxlength="4" placeholder="Digite a nova senha de 4 dígitos"
+                                                autocomplete="off" inputmode="numeric">
+                                        </div>
+
+                                        <div class="form-group-styled" style="margin-bottom: 16px;">
+                                            <label for="confirm-new-delete-password">Confirmar Nova Senha: *</label>
+                                            <input type="password" id="confirm-new-delete-password"
+                                                class="admin-input-styled" maxlength="4"
+                                                placeholder="Confirme a nova senha" autocomplete="off"
+                                                inputmode="numeric">
+                                        </div>
+
+                                        <button id="update-delete-password" class="touch-btn btn-primary btn-block-lg"
+                                            type="button">
+                                            <i data-lucide="lock"></i>
+                                            <span>Salvar Nova Senha</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-ABA 5: EQUIPE & LICENÇAS -->
+                            <div class="admin-sub-content" id="admin-equipe-content">
+                                <div class="admin-team-grid">
+                                    <!-- Card da Licença & Código de Convite -->
+                                    <div class="surface-card admin-license-card">
+                                        <div class="admin-license-header">
+                                            <div class="admin-license-icon">
+                                                <i data-lucide="building-2"></i>
+                                            </div>
+                                            <div class="admin-license-title-box">
+                                                <div class="admin-tenant-title-row">
+                                                    <h3 class="section-subheading" style="margin: 0;"
+                                                        id="admin-tenant-name">Açaí da Serra</h3>
+                                                    <button type="button" class="btn-edit-tenant-trigger" id="btn-open-edit-tenant-modal" title="Editar nome do estabelecimento (máx. 20 caracteres)">
+                                                        <i data-lucide="pencil"></i>
+                                                        <span>Editar Nome</span>
+                                                    </button>
+                                                </div>
+                                                <span class="admin-tenant-plan" id="admin-tenant-plan">Plano Pro &bull;
+                                                    Multi-Usuários</span>
+                                            </div>
+                                            <div class="admin-license-status-badge active"
+                                                id="admin-tenant-status-badge">
+                                                <span class="status-dot"></span>
+                                                <span>Licença Ativa</span>
+                                            </div>
+                                        </div>
+
+                                        <hr class="admin-divider">
+
+                                        <!-- Caixa de Código de Convite da Equipe -->
+                                        <div class="admin-invite-box">
+                                            <div class="admin-invite-head">
+                                                <div class="admin-invite-title">
+                                                    <i data-lucide="key-round"></i>
+                                                    <strong>Código de Convite da Equipe (Loja)</strong>
+                                                </div>
+                                                <button type="button" class="btn-link-action"
+                                                    id="btn-regenerate-invite-code" title="Gerar outro código">
+                                                    <i data-lucide="refresh-cw"></i>
+                                                    <span>Gerar Novo</span>
+                                                </button>
+                                            </div>
+                                            <p class="admin-invite-desc">
+                                                Compartilhe este código com seus funcionários para que eles entrem
+                                                automaticamente como operadores de caixa desta loja:
+                                            </p>
+                                            <div class="admin-invite-code-wrapper">
+                                                <span class="admin-invite-code"
+                                                    id="admin-display-invite-code">SERRA-8492</span>
+                                                <button type="button" class="touch-btn btn-secondary btn-copy-code"
+                                                    id="btn-copy-invite-code">
+                                                    <i data-lucide="copy"></i>
+                                                    <span id="btn-copy-invite-text">Copiar Código</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card de Membros da Equipe & Solicitações -->
+                                    <div class="surface-card admin-team-card">
+                                        <div class="admin-team-card-header">
+                                            <div>
+                                                <h3 class="section-subheading" style="margin: 0;">
+                                                    <i data-lucide="users"></i>
+                                                    <span>Membros da Equipe & Permissões</span>
+                                                </h3>
+                                                <p class="card-subheading" style="margin-top: 4px; margin-bottom: 0;">
+                                                    Gerencie operadores autorizados e aprove novos acessos da sua loja.
+                                                </p>
+                                            </div>
+                                            <div class="admin-team-stats-pill">
+                                                <span id="admin-team-count-text">0 membros</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="admin-team-list-container" id="admin-team-list-container">
+                                            <!-- Renderizado dinamicamente -->
+                                            <div class="admin-team-empty-state">
+                                                <i data-lucide="user-check"></i>
+                                                <p>Nenhum membro cadastrado ainda.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ================= MODAIS UNIFICADOS ================= -->
+
+    <!-- MODAL 1: CONFIRMAR COM SENHA DE SEGURANÇA (EXCLUSÃO / EXPORTAÇÃO) -->
+    <div class="modal-backdrop" id="password-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title" id="password-modal-title">Validação de Segurança</h3>
+                <button class="modal-close-icon" id="cancel-delete-icon" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" id="password-modal-desc">Digite a senha de segurança de 4 dígitos para
+                    confirmar:</p>
+                <input type="password" class="admin-input-styled" id="confirm-delete-password" maxlength="4"
+                    placeholder="••••" style="font-size: 1.5rem; text-align: center; letter-spacing: 8px;"
+                    autocomplete="off" inputmode="numeric">
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-delete" class="touch-btn btn-secondary" type="button">Cancelar</button>
+                <button id="confirm-delete" class="touch-btn btn-danger" type="button">
+                    <i data-lucide="check"></i>
+                    <span>Confirmar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: RECIBO TÉRMICO / COMPROVANTE -->
+    <div class="modal-backdrop" id="receipt-modal" style="display: none;">
+        <div class="modal-card modal-receipt-preview">
+            <div class="modal-header">
+                <h3 class="modal-title">Comprovante de Venda</h3>
+                <button class="modal-close-icon" id="close-receipt-icon" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="thermal-receipt-preview" id="receipt-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="close-receipt-btn" class="touch-btn btn-secondary" type="button">Fechar</button>
+                <button id="print-receipt-btn" class="touch-btn btn-success" type="button">
+                    <i data-lucide="printer"></i>
+                    <span>Imprimir Recibo Térmico</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: VENDA MANUAL NO HISTÓRICO -->
+    <div class="modal-backdrop" id="manual-sale-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Adicionar Venda Manual</h3>
+                <button class="modal-close-icon" id="close-manual-sale-icon" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="manual-sale-form">
+                <div class="form-group-styled">
+                    <label for="manual-product-select">Selecionar Produto:</label>
+                    <select id="manual-product-select" class="admin-input-styled"></select>
+                </div>
+
+                <div class="form-group-styled" id="manual-acai-weight-section" style="display: none;">
+                    <label for="manual-acai-weight">Peso em Gramas:</label>
+                    <input type="number" id="manual-acai-weight" class="admin-input-styled" placeholder="Ex: 350">
+                </div>
+
+                <button id="manual-add-item-btn" class="touch-btn btn-primary btn-block" type="button">
+                    <i data-lucide="plus"></i>
+                    <span>Adicionar Item à Venda</span>
+                </button>
+
+                <div class="section-micro-title" style="margin-top: 15px;">Itens da Venda Manual</div>
+                <div class="manual-cart-list" id="manual-sale-cart-items">
+                    <div class="empty-state-micro">Nenhum item adicionado</div>
+                </div>
+
+                <div class="manual-sale-total-banner" id="manual-sale-summary" style="display: none;">
+                    <span>Total:</span>
+                    <strong id="manual-sale-total">R$ 0,00</strong>
+                </div>
+
+                <div class="section-micro-title" style="margin-top: 15px;">Forma de Pagamento</div>
+                <div class="payment-options-grid" id="manual-payment-options">
+                    <div class="payment-option" data-method="cash"><span class="payment-opt-icon"><i
+                                data-lucide="banknote"></i></span><span>Dinheiro</span></div>
+                    <div class="payment-option" data-method="card"><span class="payment-opt-icon"><i
+                                data-lucide="credit-card"></i></span><span>Cartão</span></div>
+                    <div class="payment-option" data-method="pix"><span class="payment-opt-icon"><i
+                                data-lucide="qr-code"></i></span><span>PIX</span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="close-manual-sale-btn" class="touch-btn btn-secondary" type="button">Cancelar</button>
+                <button id="save-manual-sale-btn" class="touch-btn btn-success" type="button">
+                    <i data-lucide="check"></i>
+                    <span>Salvar Venda</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: SALVAR COMANDA (PAGAMENTO POSTERIOR) -->
+    <div class="modal-backdrop" id="hold-sale-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Salvar em Comanda</h3>
+                <button class="modal-close-icon" id="close-hold-sale-icon" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group-styled">
+                    <label for="customer-name">Nome do Cliente ou Mesa *</label>
+                    <input type="text" id="customer-name" class="admin-input-styled"
+                        placeholder="Ex: Mesa 02, João, Balcão 1">
+                </div>
+
+                <div class="form-group-styled" style="margin-top: 15px;">
+                    <label for="existing-order-select">Ou adicionar a uma comanda existente?</label>
+                    <select id="existing-order-select" class="admin-input-styled">
+                        <option value="new">Salvar como nova comanda</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="close-hold-sale-btn" class="touch-btn btn-secondary" type="button">Cancelar</button>
+                <button id="save-hold-sale-btn" class="touch-btn btn-warning" type="button">
+                    <i data-lucide="clipboard-check"></i>
+                    <span>Salvar Comanda</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: FINALIZAR COMANDA EM ABERTO -->
+    <div class="modal-backdrop" id="open-order-modal" style="display: none;">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="open-order-title">Comanda: Cliente</h3>
+                    <div class="order-timer-pill" id="open-order-timer">Tempo em aberto: 00:00</div>
+                </div>
+                <button class="modal-close-icon" id="close-open-order-icon" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="section-micro-title">Itens do Pedido</div>
+                <div class="open-order-items-scroll" id="open-order-items-list"></div>
+
+                <div class="order-total-banner">
+                    <span>Total da Comanda:</span>
+                    <strong id="open-order-total">R$ 0,00</strong>
+                </div>
+
+                <div class="section-micro-title" style="margin-top: 15px;">Forma de Pagamento</div>
+                <div class="payment-options-grid" id="open-order-payment-options">
+                    <div class="payment-option" data-method="cash"><span class="payment-opt-icon"><i
+                                data-lucide="banknote"></i></span><span>Dinheiro</span></div>
+                    <div class="payment-option" data-method="card"><span class="payment-opt-icon"><i
+                                data-lucide="credit-card"></i></span><span>Cartão</span></div>
+                    <div class="payment-option" data-method="pix"><span class="payment-opt-icon"><i
+                                data-lucide="qr-code"></i></span><span>PIX</span></div>
+                </div>
+
+                <div class="cash-input-box" id="open-order-cash-input" style="display: none; margin-top: 10px;">
+                    <div class="cash-input-row">
+                        <label for="open-order-cash-received">Valor Recebido (R$):</label>
+                        <input type="number" id="open-order-cash-received" class="admin-input-styled" placeholder="0.00"
+                            step="0.01">
+                    </div>
+                    <div class="change-display-pill" id="open-order-change-display" style="display: none;">
+                        <span>Troco:</span>
+                        <strong class="change-amount-val">R$ <span id="open-order-change-amount">0,00</span></strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer modal-footer-split">
+                <button id="delete-open-order-btn" class="touch-btn btn-danger" type="button">
+                    <i data-lucide="trash-2"></i>
+                    <span>Excluir Comanda</span>
+                </button>
+                <div class="modal-footer-actions">
+                    <button id="close-open-order-btn" class="touch-btn btn-secondary" type="button">Fechar</button>
+                    <button id="confirm-open-order-payment" class="touch-btn btn-success" type="button">
+                        <i data-lucide="check"></i>
+                        <span>Finalizar e Receber</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: FECHAMENTO DE CAIXA -->
+    <div class="modal-backdrop" id="close-register-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Fechamento de Caixa</h3>
+                <button class="modal-close-icon" id="btn-cancel-close-register-icon" type="button"
+                    aria-label="Fechar"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Preencha as informações de contagem física para encerrar o expediente e
+                    emitir o relatório diário.</p>
+
+                <div class="form-group-styled">
+                    <label for="closing-balance-input">Saldo Físico em Gaveta (Contagem Real R$):</label>
+                    <input type="number" id="closing-balance-input" class="admin-input-styled" placeholder="0.00"
+                        step="0.01" inputmode="decimal">
+                </div>
+
+                <div class="form-group-styled" style="margin-top: 15px;">
+                    <label for="closing-observation-input">Observações do Fechamento (Opcional):</label>
+                    <textarea id="closing-observation-input" class="admin-input-styled"
+                        style="height: 90px; resize: none;"
+                        placeholder="Ex: Sangria realizada, sobra/falta de caixa, observações do turno..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancel-close-register" class="touch-btn btn-secondary" type="button">Cancelar</button>
+                <button id="btn-confirm-close-register" class="touch-btn btn-danger" type="button">
+                    <i data-lucide="file-check"></i>
+                    <span>Confirmar Fechamento & Imprimir PDF</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDITAR ABERTURA DE CAIXA -->
+    <div class="modal-backdrop" id="edit-register-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Editar Fundo Inicial do Caixa</h3>
+                <button class="modal-close-icon" id="btn-cancel-edit-register-icon" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Corrija os valores de cédulas e moedas informados na abertura do caixa de
+                    hoje.</p>
+
+                <div class="opening-inputs-grid">
+                    <div class="form-group-styled">
+                        <label for="edit-opening-bills">
+                            <span class="label-icon"><i data-lucide="banknote"></i></span>
+                            <span>Total em Cédulas (R$)</span>
+                        </label>
+                        <input type="number" id="edit-opening-bills" class="admin-input-styled" placeholder="0.00"
+                            step="0.01" inputmode="decimal">
+                    </div>
+
+                    <div class="form-group-styled">
+                        <label for="edit-opening-coins">
+                            <span class="label-icon"><i data-lucide="coins"></i></span>
+                            <span>Total em Moedas (R$)</span>
+                        </label>
+                        <input type="number" id="edit-opening-coins" class="admin-input-styled" placeholder="0.00"
+                            step="0.01" inputmode="decimal">
+                    </div>
+                </div>
+
+                <div class="opening-total-banner" style="margin-top: 14px;">
+                    <span>Novo Fundo Inicial:</span>
+                    <strong id="edit-opening-total-display">R$ 0,00</strong>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancel-edit-register" class="touch-btn btn-secondary" type="button">Cancelar</button>
+                <button id="btn-confirm-edit-register" class="touch-btn btn-primary" type="button">
+                    <i data-lucide="check"></i>
+                    <span>Salvar Alterações</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: EDITAR NOME DO ESTABELECIMENTO (MÁX 20 CARACTERES) -->
+    <div class="modal-backdrop" id="edit-tenant-modal" style="display: none; z-index: 9999;">
+        <div class="modal-card" style="max-width: 440px;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(168, 85, 247, 0.15); display: flex; align-items: center; justify-content: center; color: var(--brand-primary, #a855f7);">
+                        <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <div>
+                        <h3 class="modal-title" style="margin: 0; font-size: 1.15rem;">Nome do Estabelecimento</h3>
+                        <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Defina o nome da sua loja no sistema</p>
+                    </div>
+                </div>
+                <button class="modal-close-icon" id="close-edit-tenant-icon" type="button" aria-label="Fechar">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group-styled">
+                    <label for="modal-edit-tenant-name" style="font-weight: 700; font-size: 0.88rem;">Novo Nome da Loja *</label>
+                    <input type="text" id="modal-edit-tenant-name" class="admin-input-styled"
+                        placeholder="Ex: Açaí & Sorvete Real" maxlength="20" autocomplete="off"
+                        style="font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                        <span style="font-size: 0.76rem; color: var(--text-muted);">Máximo de 20 caracteres (impresso em recibos).</span>
+                        <span id="tenant-name-char-count" style="font-size: 0.78rem; font-weight: 800; color: var(--brand-primary, #a855f7);">0/20</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="close-edit-tenant-btn" class="touch-btn btn-secondary" type="button" style="height: 42px; padding: 0 16px;">
+                    Cancelar
+                </button>
+                <button id="save-edit-tenant-btn" class="touch-btn btn-primary" type="button" style="height: 42px; padding: 0 20px; font-weight: 700;">
+                    <i data-lucide="check"></i>
+                    <span>Salvar Alterações</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 7: CONFIRMAÇÃO GENÉRICA -->
+    <div class="modal-backdrop" id="generic-confirm-modal" style="display: none;">
+        <div class="modal-card modal-sm">
+            <div class="modal-header">
+                <h3 class="modal-title" id="generic-confirm-title">Confirmar Ação</h3>
+                <button class="modal-close-icon" id="generic-confirm-close" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description" id="generic-confirm-message">Tem certeza que deseja continuar?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="generic-confirm-cancel" class="touch-btn btn-secondary" type="button">Cancelar</button>
+                <button id="generic-confirm-ok" class="touch-btn btn-danger" type="button">
+                    <i data-lucide="check"></i>
+                    <span>Confirmar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 8: ADICIONAR NOVO PRODUTO -->
+    <div class="modal-backdrop" id="add-product-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Cadastrar Novo Produto</h3>
+                <button class="modal-close-icon" id="close-add-product-icon" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group-styled">
+                    <label for="modal-new-product-name">Nome do Produto *</label>
+                    <input type="text" id="modal-new-product-name" class="admin-input-styled"
+                        placeholder="Ex: Açaí 500ml, Suco de Laranja, Casquinha...">
+                </div>
+
+                <div class="form-group-styled">
+                    <label for="modal-new-product-price">Preço de Venda (R$) *</label>
+                    <input type="number" id="modal-new-product-price" class="admin-input-styled" placeholder="0.00"
+                        step="0.01" inputmode="decimal">
+                </div>
+
+                <div class="form-group-styled">
+                    <label for="modal-new-product-category">Categoria</label>
+                    <input type="text" id="modal-new-product-category" class="admin-input-styled"
+                        list="product-category-datalist" placeholder="Ex: Bebidas, Doces, Sobremesas, Picolés...">
+                    <datalist id="product-category-datalist">
+                        <option value="Bebidas">
+                        <option value="Doces">
+                        <option value="Sobremesas">
+                        <option value="Picolés">
+                        <option value="Açaí & Sorvetes">
+                        <option value="Geral">
+                    </datalist>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="close-add-product-btn" class="touch-btn btn-secondary" type="button">Cancelar</button>
+                <button id="save-new-product-modal-btn" class="touch-btn btn-primary" type="button">
+                    <i data-lucide="plus"></i>
+                    <span>Cadastrar Produto</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 9: EDITAR PRODUTO -->
+    <div class="modal-backdrop" id="edit-product-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Editar Produto</h3>
+                <button class="modal-close-icon" id="close-edit-product-icon" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modal-edit-product-id">
+
+                <div class="form-group-styled">
+                    <label for="modal-edit-product-name">Nome do Produto *</label>
+                    <input type="text" id="modal-edit-product-name" class="admin-input-styled"
+                        placeholder="Nome do produto">
+                </div>
+
+                <div class="form-group-styled">
+                    <label for="modal-edit-product-price">Preço de Venda (R$) *</label>
+                    <input type="number" id="modal-edit-product-price" class="admin-input-styled" placeholder="0.00"
+                        step="0.01" inputmode="decimal">
+                </div>
+
+                <div class="form-group-styled">
+                    <label for="modal-edit-product-category">Categoria</label>
+                    <input type="text" id="modal-edit-product-category" class="admin-input-styled"
+                        list="product-category-datalist" placeholder="Categoria">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="close-edit-product-btn" class="touch-btn btn-secondary" type="button">Cancelar</button>
+                <button id="save-edit-product-modal-btn" class="touch-btn btn-primary" type="button">
+                    <i data-lucide="save"></i>
+                    <span>Salvar Alterações</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 10: CONFIGURAR ATALHOS DE PESO -->
+    <div class="modal-backdrop" id="weight-presets-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Configurar Atalhos de Peso</h3>
+                <button class="modal-close-icon" id="close-weight-presets-icon" type="button" aria-label="Fechar"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Adicione ou remova os botões de gramatura rápida exibidos na tela principal
+                    do PDV:</p>
+
+                <div class="form-group-styled" style="margin-bottom: 15px;">
+                    <label for="modal-new-preset-weight">Novo Peso (em gramas):</label>
+                    <div class="input-with-action">
+                        <input type="number" id="modal-new-preset-weight" class="admin-input-styled"
+                            placeholder="Ex: 180, 350, 600, 800" min="1" step="1" inputmode="numeric">
+                        <button id="modal-add-preset-btn" class="touch-btn btn-primary" type="button">
+                            <i data-lucide="plus"></i>
+                            <span>Adicionar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <label style="display:block; margin-bottom: 8px; font-weight: 700; font-size: 0.88rem;">Atalhos Atuais
+                    (clique no ✕ para remover):</label>
+                <div class="preset-chips-list" id="modal-preset-chips-container"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-reset-presets-btn" class="touch-btn btn-secondary" type="button">
+                    <i data-lucide="rotate-ccw"></i>
+                    <span>Restaurar Padrão</span>
+                </button>
+                <button id="close-weight-presets-btn" class="touch-btn btn-primary" type="button">
+                    <i data-lucide="check"></i>
+                    <span>Concluir</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- MODAL: PREÇO NÃO CONFIGURADO (BLOQUEIO VENDA KG) -->
+    <div class="modal-backdrop" id="price-not-configured-modal" style="display: none; z-index: 9999;">
+        <div class="modal-card" style="max-width: 440px; text-align: center; padding: 24px;">
+            <div
+                style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
+                <i data-lucide="alert-triangle" style="width: 28px; height: 28px;"></i>
+            </div>
+            <h3 style="font-size: 1.3rem; font-weight: 800; color: #ffffff; margin-bottom: 8px;">Preço não configurado
+            </h3>
+            <p style="font-size: 0.88rem; color: #94a3b8; line-height: 1.45; margin-bottom: 20px;">
+                Cadastre o preço por KG de Açaí e/ou Sorvete antes de realizar uma venda desse tipo.
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="touch-btn btn-secondary" id="btn-close-price-alert"
+                    style="flex: 1; height: 42px;">
+                    Fechar
+                </button>
+                <button type="button" class="touch-btn btn-primary" id="btn-config-price-now"
+                    style="flex: 1.3; height: 42px; font-weight: 700;">
+                    Configurar agora
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER CENTRALIZADO -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- NOTIFICAÇÃO COMPATIBILIDADE LEGADA -->
+    <div id="notification" class="notification" style="display: none;"></div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

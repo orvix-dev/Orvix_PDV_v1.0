@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Verifica se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Verifica se é Master Admin
+    function isMasterAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email in [
+          'orvixsolucoes@gmail.com',
+          'admin@orvix.com',
+          'gerente@orvix.com',
+          'krlosaugus1@gmail.com'
+        ] ||
+        (request.auth.token.admin == true)
+      );
+    }
+
+    // Coleção: Usuários (users/{userId})
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (request.auth.uid == userId || isMasterAdmin());
+      allow delete: if isMasterAdmin();
+    }
+
+    // Coleção: Licenças de Ativação (licenses/{licenseKey})
+    match /licenses/{licenseKey} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isMasterAdmin();
+    }
+
+    // Coleção: Estabelecimentos / Lojas (tenants/{tenantId})
+    match /tenants/{tenantId} {
+      allow read, write: if isAuthenticated();
+
+      // Subcoleções: produtos, pedidos, caixa, equipe, configurações
+      match /{allChildren=**} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
+    // Coleção: Sessões de Caixa (cash_sessions/{sessionId})
+    match /cash_sessions/{sessionId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Coleção: Pedidos / Vendas Globais (orders/{orderId})
+    match /orders/{orderId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

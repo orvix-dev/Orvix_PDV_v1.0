@@ -1,0 +1,163 @@
+/* ==========================================================================
+   ORVIX PDV — ATOMIC DESIGN SYSTEM TOKENS
+   ========================================================================== */
+
+:root {
+  /* Marca e Gradientes */
+  --brand-primary: #7c3aed;
+  --brand-primary-hover: #6d28d9;
+  --brand-primary-active: #5b21b6;
+  --brand-primary-light: #f5f3ff;
+  --brand-primary-glow: rgba(124, 58, 237, 0.28);
+  --brand-accent: #ec4899;
+  --brand-accent-light: #fdf2f8;
+  --brand-gradient: linear-gradient(135deg, #6b21a8 0%, #7c3aed 50%, #ec4899 100%);
+  --brand-gradient-hover: linear-gradient(135deg, #581c87 0%, #6d28d9 50%, #db2777 100%);
+
+  /* Feedback & Estados */
+  --success: #10b981;
+  --success-hover: #059669;
+  --success-light: #ecfdf5;
+  --success-border: #a7f3d0;
+  --success-text: #065f46;
+
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --danger-light: #fef2f2;
+  --danger-border: #fecaca;
+  --danger-text: #991b1b;
+
+  --warning: #f59e0b;
+  --warning-hover: #d97706;
+  --warning-light: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-text: #92400e;
+
+  --info: #3b82f6;
+  --info-hover: #2563eb;
+  --info-light: #eff6ff;
+  --info-border: #bfdbfe;
+  --info-text: #1e40af;
+
+  /* Superfícies & Fundo - Modo Claro */
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-surface-subtle: #f1f5f9;
+  
+  --bg-sidebar: #0f172a;
+  --bg-sidebar-hover: #1e293b;
+  --bg-sidebar-active: #334155;
+  --text-sidebar: #94a3b8;
+  --text-sidebar-active: #ffffff;
+  --border-sidebar: rgba(255, 255, 255, 0.08);
+
+  --border-color: #e2e8f0;
+  --border-color-subtle: #f1f5f9;
+  --border-color-focus: #7c3aed;
+  --border-color-hover: #cbd5e1;
+
+  --text-primary: #090d16;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-focus-ring: rgba(124, 58, 237, 0.2);
+
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --card-shadow-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+  --card-shadow-elevated: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+  
+  --modal-backdrop: rgba(15, 23, 42, 0.65);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.2);
+
+  /* Dimensões */
+  --sidebar-width: 250px;
+  --header-height: 64px;
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 9999px;
+  
+  /* Animações e Transições */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --transition-fast: 0.15s var(--ease-spring);
+  --transition-base: 0.25s var(--ease-spring);
+  --transition-slow: 0.4s var(--ease-spring);
+}
+
+/* Modo Escuro */
+[data-theme="dark"] {
+  --brand-primary: #8b5cf6;
+  --brand-primary-hover: #7c3aed;
+  --brand-primary-active: #6d28d9;
+  --brand-primary-light: rgba(139, 92, 246, 0.16);
+  --brand-primary-glow: rgba(139, 92, 246, 0.35);
+  --brand-accent: #f472b6;
+  --brand-accent-light: rgba(244, 114, 182, 0.16);
+  --brand-gradient: linear-gradient(135deg, #7e22ce 0%, #8b5cf6 50%, #f472b6 100%);
+  --brand-gradient-hover: linear-gradient(135deg, #6b21a8 0%, #7c3aed 50%, #ec4899 100%);
+
+  --success: #10b981;
+  --success-hover: #059669;
+  --success-light: rgba(16, 185, 129, 0.14);
+  --success-border: rgba(16, 185, 129, 0.3);
+  --success-text: #6ee7b7;
+
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --danger-light: rgba(239, 68, 68, 0.14);
+  --danger-border: rgba(239, 68, 68, 0.3);
+  --danger-text: #fca5a5;
+
+  --warning: #f59e0b;
+  --warning-hover: #d97706;
+  --warning-light: rgba(245, 158, 11, 0.14);
+  --warning-border: rgba(245, 158, 11, 0.3);
+  --warning-text: #fcd34d;
+
+  --info: #3b82f6;
+  --info-hover: #2563eb;
+  --info-light: rgba(59, 130, 246, 0.14);
+  --info-border: rgba(59, 130, 246, 0.3);
+  --info-text: #93c5fd;
+
+  --bg-app: #08090d;
+  --bg-surface: #0e121b;
+  --bg-surface-elevated: #151b2a;
+  --bg-surface-subtle: #121824;
+
+  --bg-sidebar: #06080b;
+  --bg-sidebar-hover: #111622;
+  --bg-sidebar-active: #192030;
+  --text-sidebar: #8892a4;
+  --text-sidebar-active: #ffffff;
+  --border-sidebar: rgba(255, 255, 255, 0.07);
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-subtle: rgba(255, 255, 255, 0.04);
+  --border-color-focus: #8b5cf6;
+  --border-color-hover: rgba(255, 255, 255, 0.18);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #090d16;
+
+  --input-bg: #121824;
+  --input-border: rgba(255, 255, 255, 0.14);
+  --input-focus-ring: rgba(139, 92, 246, 0.3);
+
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --card-shadow-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  --card-shadow-elevated: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+
+  --glass-bg: rgba(14, 18, 27, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
