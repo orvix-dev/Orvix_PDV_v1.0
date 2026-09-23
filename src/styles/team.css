@@ -1,0 +1,833 @@
+/**
+ * team.css — Estilos da Central de Equipe, Gestão de Funcionários, PIN e Ranking de Vendas por Turno
+ */
+
+/* Sub-navegação interna de Equipe */
+.team-subnav-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-surface-elevated, rgba(30, 41, 59, 0.7));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 6px;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+}
+
+.team-subnav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 8px 16px;
+  border-radius: var(--radius-md, 8px);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.team-subnav-btn:hover {
+  color: var(--text-primary, #f8fafc);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.team-subnav-btn.active {
+  background: var(--primary, #7c3aed);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+}
+
+.team-subnav-btn i {
+  width: 16px;
+  height: 16px;
+}
+
+/* Header de Ações dos Funcionários */
+.team-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.team-section-title-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  margin: 0;
+}
+
+.team-section-title-group p {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #94a3b8);
+  margin: 4px 0 0 0;
+}
+
+.team-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Grid de Cards de Funcionários */
+.team-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 1.25rem;
+}
+
+.team-employee-card {
+  background: var(--bg-surface, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-xl, 16px);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.team-employee-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(124, 58, 237, 0.35);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+}
+
+.team-employee-card.inactive {
+  opacity: 0.65;
+  filter: grayscale(0.5);
+}
+
+.team-employee-card.is-active-operator {
+  border-color: #10b981;
+  box-shadow: 0 0 0 1px #10b981, 0 8px 24px rgba(16, 185, 129, 0.2);
+}
+
+.active-operator-badge-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.employee-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.employee-avatar-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.employee-meta-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.employee-card-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.employee-card-role-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.employee-role-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  color: #c4b5fd;
+}
+
+.employee-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.employee-status-pill.ativo {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.employee-status-pill.inativo {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* Detalhes de Segurança e PIN */
+.employee-security-box {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-md, 8px);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.pin-masked-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--text-primary, #f8fafc);
+}
+
+/* Ações do Card de Funcionário */
+.employee-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  padding-top: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.btn-card-action {
+  flex: 1;
+  min-width: 80px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #f8fafc);
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-card-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-card-action.btn-assume-shift {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.25));
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.btn-card-action.btn-assume-shift:hover {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+/* ==========================================================================
+   RANKING DE VENDAS POR TURNO & PÓDIO
+   ========================================================================== */
+
+/* Barra de Filtros de Período do Ranking */
+.ranking-filters-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: var(--bg-surface, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 10px 16px;
+  margin-bottom: 1.5rem;
+}
+
+.ranking-period-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-md, 8px);
+  padding: 4px;
+}
+
+.ranking-pill-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ranking-pill-btn:hover {
+  color: #ffffff;
+}
+
+.ranking-pill-btn.active {
+  background: var(--primary, #7c3aed);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+}
+
+.ranking-summary-badge {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.ranking-stat-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ranking-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted, #64748b);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.ranking-stat-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary, #f8fafc);
+}
+
+/* PÓDIO DOS 3 PRIMEIROS */
+.team-podium-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 1.5rem 0 2.5rem 0;
+  padding: 1rem;
+}
+
+.podium-place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  max-width: 260px;
+}
+
+.podium-avatar-wrap {
+  position: relative;
+  margin-bottom: 0.85rem;
+}
+
+.podium-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border: 3px solid transparent;
+}
+
+.podium-crown-badge {
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* 1º Lugar - Ouro */
+.podium-place.rank-1 .podium-avatar {
+  width: 84px;
+  height: 84px;
+  font-size: 1.7rem;
+  border-color: #fbbf24;
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.35);
+}
+
+.podium-place.rank-1 .podium-crown-badge {
+  background: #fbbf24;
+  color: #78350f;
+  top: -14px;
+  right: -6px;
+  width: 32px;
+  height: 32px;
+}
+
+.podium-pedestal {
+  width: 100%;
+  border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+  padding: 1.25rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.podium-place.rank-1 .podium-pedestal {
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.22) 0%, rgba(245, 158, 11, 0.08) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-bottom: none;
+  min-height: 155px;
+}
+
+/* 2º Lugar - Prata */
+.podium-place.rank-2 .podium-avatar {
+  border-color: #94a3b8;
+  box-shadow: 0 0 20px rgba(148, 163, 184, 0.25);
+}
+
+.podium-place.rank-2 .podium-crown-badge {
+  background: #cbd5e1;
+  color: #334155;
+}
+
+.podium-place.rank-2 .podium-pedestal {
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.18) 0%, rgba(100, 116, 139, 0.06) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-bottom: none;
+  min-height: 125px;
+}
+
+/* 3º Lugar - Bronze */
+.podium-place.rank-3 .podium-avatar {
+  border-color: #d97706;
+  box-shadow: 0 0 20px rgba(217, 119, 6, 0.25);
+}
+
+.podium-place.rank-3 .podium-crown-badge {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.podium-place.rank-3 .podium-pedestal {
+  background: linear-gradient(180deg, rgba(217, 119, 6, 0.15) 0%, rgba(180, 83, 9, 0.05) 100%);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-bottom: none;
+  min-height: 100px;
+}
+
+.podium-emp-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary, #f8fafc);
+  margin-bottom: 2px;
+}
+
+.podium-emp-role {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.podium-emp-amount {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--success, #10b981);
+  margin-top: 6px;
+}
+
+.podium-emp-orders {
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+}
+
+/* TABELA DE RANKING POR COLABORADOR */
+.ranking-table-card {
+  background: var(--bg-surface, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-xl, 16px);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.ranking-table th {
+  padding: 12px 14px;
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.ranking-table td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #f8fafc);
+  vertical-align: middle;
+}
+
+.ranking-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ranking-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rank-badge-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary, #94a3b8);
+}
+
+.rank-badge-number.gold {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.rank-badge-number.silver {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.rank-badge-number.bronze {
+  background: rgba(217, 119, 6, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+}
+
+.ranking-emp-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ranking-emp-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.ranking-progress-bar-wrap {
+  width: 100%;
+  max-width: 140px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.ranking-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #10b981);
+  border-radius: 999px;
+}
+
+/* ==========================================================================
+   MODAL DE PIN & KEYPAD GLASSMORPHISM
+   ========================================================================== */
+
+.pin-modal-card {
+  max-width: 360px;
+  width: 90%;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-2xl, 24px);
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+}
+
+.pin-modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.pin-header-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  color: #a78bfa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pin-modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  margin: 0;
+}
+
+.pin-modal-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+  margin: 2px 0 0 0;
+}
+
+.pin-modal-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.pin-modal-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Operador Alvo no PIN */
+.pin-target-operator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md, 8px);
+  padding: 8px 12px;
+  margin-bottom: 1.25rem;
+}
+
+.pin-target-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pin-target-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.pin-target-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+}
+
+.pin-target-role {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Dots Indicadores */
+.pin-dots-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 1.25rem;
+}
+
+.pin-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pin-dot.filled {
+  background: var(--primary, #7c3aed);
+  border-color: #a78bfa;
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.6);
+  transform: scale(1.1);
+}
+
+.pin-shake {
+  animation: pinShake 0.4s ease-in-out;
+}
+
+@keyframes pinShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.pin-error-alert {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--danger, #ef4444);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Teclado Numérico Virtual */
+.pin-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+
+.pin-key-btn {
+  height: 54px;
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #f8fafc);
+  font-size: 1.35rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.pin-key-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.pin-key-btn:active {
+  transform: scale(0.96);
+  background: rgba(124, 58, 237, 0.25);
+  border-color: var(--primary, #7c3aed);
+}
+
+.pin-key-btn.pin-key-action {
+  font-size: 1rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.pin-key-btn.pin-key-clear:hover {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.pin-key-btn.pin-key-backspace:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.pin-modal-footer {
+  display: flex;
+  gap: 10px;
+}
+
+.pin-modal-footer button {
+  flex: 1;
+}
+
+/* Responsividade */
+@media (max-width: 640px) {
+  .team-podium-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .podium-place {
+    max-width: 100%;
+  }
+
+  .podium-pedestal {
+    min-height: auto !important;
+  }
+}

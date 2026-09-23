@@ -5,6 +5,7 @@
  */
 
 import './styles/main.css';
+import './styles/team.css';
 import { authService } from './services/auth.service.js';
 import { licenseService } from './services/license.service.js';
 import { posService } from './services/pos.service.js';
@@ -13,12 +14,14 @@ import { cashService } from './services/cash.service.js';
 import { productsService } from './services/products.service.js';
 import { expensesService } from './services/expenses.service.js';
 import { historyService } from './services/history.service.js';
+import { employeeService } from './services/employee.service.js';
 import { PdfService } from './services/pdf.service.js';
 import { LoginFormComponent } from './components/organisms/LoginForm.js';
 import { PendingApprovalModalComponent } from './components/organisms/PendingApprovalModal.js';
 import { StoreSelectModalComponent } from './components/organisms/StoreSelectModal.js';
 import { OnboardingModalComponent } from './components/organisms/OnboardingModal.js';
 import { confirmModal } from './components/organisms/ConfirmModal.js';
+import { pinModal } from './components/organisms/PinModal.js';
 import { env } from './config/env.js';
 
 class OrvixApp {
@@ -42,7 +45,9 @@ class OrvixApp {
       teamUnsubscribe: null,
       tenantUnsubscribe: null,
       catalogCategory: 'all',
-      catalogSearch: ''
+      catalogSearch: '',
+      selectedRankingPeriod: 'today',
+      selectedTeamSubTab: 'members'
     };
   }
 
@@ -53,6 +58,7 @@ class OrvixApp {
     this.storeSelectModal.mount();
     this.onboardingModal.mount();
     confirmModal.mount();
+    pinModal.mount();
     this.onboardingModal.onTenantNameUpdated = () => {
       this.updateTenantHeader(licenseService.getLocalTenant());
     };
@@ -334,7 +340,52 @@ class OrvixApp {
       btnRegenerateInviteCode: document.getElementById('btn-regenerate-invite-code'),
       adminTeamListContainer: document.getElementById('admin-team-list-container'),
       adminTeamCountText: document.getElementById('admin-team-count-text'),
-      adminTeamPendingCount: document.getElementById('admin-team-pending-count')
+      adminTeamPendingCount: document.getElementById('admin-team-pending-count'),
+
+      // Operador & Turnos de Caixa
+      openingEmployeeSelect: document.getElementById('opening-employee-select'),
+      cashShiftOperatorBanner: document.getElementById('cash-shift-operator-banner'),
+      cashShiftAvatar: document.getElementById('cash-shift-avatar'),
+      cashShiftEmployeeName: document.getElementById('cash-shift-employee-name'),
+      cashShiftCodeTag: document.getElementById('cash-shift-code-tag'),
+      cashShiftOpenedTime: document.getElementById('cash-shift-opened-time'),
+      btnQuickSwitchShift: document.getElementById('btn-quick-switch-shift'),
+      sidebarOperatorName: document.getElementById('sidebar-operator-name'),
+      sidebarOperatorRole: document.getElementById('sidebar-operator-role'),
+      operatorInitials: document.getElementById('operator-initials'),
+
+      // Sub-abas de Equipe
+      teamMembersCountBadge: document.getElementById('team-members-count-badge'),
+      btnTeamTabMembers: document.getElementById('btn-team-tab-members'),
+      btnTeamTabRanking: document.getElementById('btn-team-tab-ranking'),
+      btnTeamTabShifts: document.getElementById('btn-team-tab-shifts'),
+      teamViewMembers: document.getElementById('team-view-members'),
+      teamViewRanking: document.getElementById('team-view-ranking'),
+      teamViewShifts: document.getElementById('team-view-shifts'),
+      btnOpenEmployeeModal: document.getElementById('btn-open-employee-modal'),
+      teamEmployeesGrid: document.getElementById('team-employees-grid'),
+
+      // Modal Funcionário
+      employeeFormModal: document.getElementById('employee-form-modal'),
+      employeeForm: document.getElementById('employee-form'),
+      employeeModalTitle: document.getElementById('employee-modal-title'),
+      employeeFormId: document.getElementById('employee-form-id'),
+      employeeFormName: document.getElementById('employee-form-name'),
+      employeeFormRole: document.getElementById('employee-form-role'),
+      employeeFormPin: document.getElementById('employee-form-pin'),
+      employeeFormPhone: document.getElementById('employee-form-phone'),
+      employeeFormStatus: document.getElementById('employee-form-status'),
+      btnCloseEmployeeModal: document.getElementById('btn-close-employee-modal'),
+      btnCancelEmployeeForm: document.getElementById('btn-cancel-employee-form'),
+
+      // Ranking & Pódio
+      teamPodiumContainer: document.getElementById('team-podium-container'),
+      teamRankingTbody: document.getElementById('team-ranking-tbody'),
+      teamShiftsTbody: document.getElementById('team-shifts-tbody'),
+      rankSummaryRevenue: document.getElementById('rank-summary-revenue'),
+      rankSummaryOrders: document.getElementById('rank-summary-orders'),
+      rankSummaryLeader: document.getElementById('rank-summary-leader'),
+      fullShiftsHistoryTbody: document.getElementById('full-shifts-history-tbody')
     };
   }
 
@@ -622,6 +673,7 @@ class OrvixApp {
     this.DOM.openingCoinsInput?.addEventListener('input', () => this.updateOpeningTotalDisplay());
     this.DOM.btnOpenRegister?.addEventListener('click', () => this.handleOpenRegister());
     this.DOM.btnCloseRegister?.addEventListener('click', () => this.handleCloseRegister());
+    this.DOM.btnQuickSwitchShift?.addEventListener('click', () => this.handleQuickSwitchShift());
 
     // 11. Despesas
     this.DOM.addNewExpenseBtn?.addEventListener('click', () => this.handleAddExpense());
@@ -941,6 +993,53 @@ class OrvixApp {
       }
     });
     this.DOM.saveEditTenantBtn?.addEventListener('click', () => this.handleSaveTenantName());
+
+    // 17.2 Equipe, Funcionários & Ranking por Turno
+    this.DOM.btnTeamTabMembers?.addEventListener('click', () => this.switchTeamSubTab('members'));
+    this.DOM.btnTeamTabRanking?.addEventListener('click', () => this.switchTeamSubTab('ranking'));
+    this.DOM.btnTeamTabShifts?.addEventListener('click', () => this.switchTeamSubTab('shifts'));
+
+    // Filtros de período do Ranking
+    document.querySelectorAll('.ranking-pill-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.ranking-pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.state.selectedRankingPeriod = btn.dataset.period || 'today';
+        this.renderShiftRanking();
+      });
+    });
+
+    // Modal de Novo Funcionário
+    this.DOM.btnOpenEmployeeModal?.addEventListener('click', () => this.openEmployeeModal());
+    this.DOM.btnCloseEmployeeModal?.addEventListener('click', () => this.closeEmployeeModal());
+    this.DOM.btnCancelEmployeeForm?.addEventListener('click', () => this.closeEmployeeModal());
+    this.DOM.employeeFormModal?.addEventListener('click', (e) => {
+      if (e.target === this.DOM.employeeFormModal) this.closeEmployeeModal();
+    });
+
+    this.DOM.employeeForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.handleSaveEmployee();
+    });
+
+    // Delegação de Ações dos Cards de Funcionários
+    this.DOM.teamEmployeesGrid?.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.btn-card-action');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const empId = btn.dataset.id;
+
+      if (action === 'assume') {
+        this.handleAssumeShift(empId);
+      } else if (action === 'edit') {
+        const emp = employeeService.getEmployeeById(empId);
+        if (emp) this.openEmployeeModal(emp);
+      } else if (action === 'toggle') {
+        this.handleToggleEmployeeStatus(empId);
+      } else if (action === 'delete') {
+        this.handleDeleteEmployee(empId);
+      }
+    });
 
     // 18. Produtos: Busca e Filtro de Categorias
     this.DOM.productViewSearch?.addEventListener('input', (e) => {
@@ -1309,6 +1408,11 @@ class OrvixApp {
       change = Math.max(0, received - total);
     }
 
+    const activeEmp = employeeService.getActiveEmployee();
+    const opName = activeEmp?.name || authService.currentUser?.displayName || 'Operador';
+    const opRole = activeEmp?.role || 'Operador de Caixa';
+    const opId = activeEmp?.id || null;
+
     const saleRecord = {
       items: cart,
       subtotal,
@@ -1321,7 +1425,10 @@ class OrvixApp {
       cashReceived: received,
       change: change,
       cashSessionId: cashService.getCurrentSessionId(),
-      operatorName: authService.currentUser?.displayName || 'Operador',
+      employeeId: opId,
+      employeeName: opName,
+      employeeRole: opRole,
+      operatorName: opName,
       operatorUid: authService.currentUser?.uid || null
     };
 
@@ -1339,6 +1446,7 @@ class OrvixApp {
     this.renderCart();
     this.renderCashRegister();
     this.renderHistory();
+    this.renderShiftRanking();
 
     this.showToast('Venda finalizada com sucesso!', 'success');
 
@@ -1777,7 +1885,10 @@ class OrvixApp {
       orderDuration: duration,
       fromOrder: true,
       cashSessionId: cashService.getCurrentSessionId(),
-      operatorName: authService.currentUser?.displayName || 'Operador',
+      employeeId: employeeService.getActiveEmployee()?.id || null,
+      employeeName: employeeService.getActiveEmployee()?.name || authService.currentUser?.displayName || 'Operador',
+      employeeRole: employeeService.getActiveEmployee()?.role || 'Operador',
+      operatorName: employeeService.getActiveEmployee()?.name || authService.currentUser?.displayName || 'Operador',
       operatorUid: authService.currentUser?.uid || null
     };
 
@@ -1791,6 +1902,7 @@ class OrvixApp {
     this.renderOrders();
     this.renderCashRegister();
     this.renderHistory();
+    this.renderShiftRanking();
 
     this.showToast('Comanda finalizada e recebida com sucesso!', 'success');
 
@@ -1993,7 +2105,10 @@ class OrvixApp {
       change: 0,
       isManualSale: true,
       cashSessionId: cashService.getCurrentSessionId(),
-      operatorName: authService.currentUser?.displayName || 'Operador',
+      employeeId: employeeService.getActiveEmployee()?.id || null,
+      employeeName: employeeService.getActiveEmployee()?.name || authService.currentUser?.displayName || 'Operador',
+      employeeRole: employeeService.getActiveEmployee()?.role || 'Operador',
+      operatorName: employeeService.getActiveEmployee()?.name || authService.currentUser?.displayName || 'Operador',
       operatorUid: authService.currentUser?.uid || null
     };
 
@@ -2003,6 +2118,7 @@ class OrvixApp {
     this.closeManualSaleModal();
     this.renderCashRegister();
     this.renderHistory();
+    this.renderShiftRanking();
 
     this.showToast('Venda manual salva com sucesso!', 'success');
 
@@ -2019,6 +2135,8 @@ class OrvixApp {
     const sales = historyService.getSalesForDate(this.state.today);
     const expenses = expensesService.getExpensesForDate(this.state.today);
     const metrics = cashService.getTodayMetrics(sales, expenses);
+    const currentSession = cashService.getCurrentSession();
+    const activeEmp = employeeService.getActiveEmployee();
 
     if (this.DOM.headerCaixaDot) {
       this.DOM.headerCaixaDot.className = `header-caixa-dot ${isOpen ? 'open' : ''}`;
@@ -2033,6 +2151,27 @@ class OrvixApp {
     if (this.DOM.cashRegisterOpening && this.DOM.cashRegisterDashboard) {
       this.DOM.cashRegisterOpening.style.display = isOpen ? 'none' : 'block';
       this.DOM.cashRegisterDashboard.style.display = isOpen ? 'block' : 'none';
+    }
+
+    // Banner do Operador do Turno Ativo
+    if (this.DOM.cashShiftOperatorBanner) {
+      if (isOpen && currentSession) {
+        this.DOM.cashShiftOperatorBanner.style.display = 'flex';
+        const empName = currentSession.openedByEmployeeName || currentSession.openedByName || activeEmp?.name || 'Operador';
+        const emp = employeeService.findEmployeeByName(empName) || activeEmp;
+        if (this.DOM.cashShiftEmployeeName) this.DOM.cashShiftEmployeeName.innerText = empName;
+        if (this.DOM.cashShiftCodeTag) this.DOM.cashShiftCodeTag.innerText = `Turno ${currentSession.sessionCode || '#001'}`;
+        if (this.DOM.cashShiftAvatar) {
+          this.DOM.cashShiftAvatar.innerText = empName.slice(0, 2).toUpperCase();
+          if (emp?.avatarColor) this.DOM.cashShiftAvatar.style.background = emp.avatarColor;
+        }
+        if (this.DOM.cashShiftOpenedTime && currentSession.openedAt) {
+          const time = new Date(currentSession.openedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          this.DOM.cashShiftOpenedTime.innerText = `Iniciado às ${time}`;
+        }
+      } else {
+        this.DOM.cashShiftOperatorBanner.style.display = 'none';
+      }
     }
 
     if (this.DOM.dashOpeningBalance) this.DOM.dashOpeningBalance.innerText = `R$ ${metrics.openingTotal.toFixed(2)}`;
@@ -2085,11 +2224,11 @@ class OrvixApp {
               <div class="session-metrics-grid">
                 <div class="session-metric-cell">
                   <span class="session-metric-label">Aberto por:</span>
-                  <strong class="session-metric-value user-val">${sess.openedByName || 'Operador'}</strong>
+                  <strong class="session-metric-value user-val">${sess.openedByEmployeeName || sess.openedByName || 'Operador'}</strong>
                 </div>
                 <div class="session-metric-cell">
                   <span class="session-metric-label">Fechado por:</span>
-                  <strong class="session-metric-value user-val">${sess.closedByName || (isSessOpen ? 'Em aberto' : 'Operador')}</strong>
+                  <strong class="session-metric-value user-val">${sess.closedByEmployeeName || sess.closedByName || (isSessOpen ? 'Em aberto' : 'Operador')}</strong>
                 </div>
                 <div class="session-metric-cell">
                   <span class="session-metric-label">Fundo Inicial:</span>
@@ -2124,19 +2263,74 @@ class OrvixApp {
   async handleOpenRegister() {
     const b = parseFloat(this.DOM.openingBillsInput?.value) || 0;
     const c = parseFloat(this.DOM.openingCoinsInput?.value) || 0;
+
+    const selectedEmpId = this.DOM.openingEmployeeSelect?.value;
+    const emp = employeeService.getEmployeeById(selectedEmpId) || employeeService.getActiveEmployee();
+
+    if (!emp) {
+      this.showToast('Nenhum colaborador selecionado para abrir o turno.', 'error');
+      return;
+    }
+
+    // Solicita o PIN de 4 dígitos do colaborador selecionado
+    const pinResult = await pinModal.prompt({
+      title: 'Abertura de Caixa',
+      desc: `Digite o PIN de segurança para autorizar o turno de ${emp.name}:`,
+      employee: emp,
+      validate: (inputPin) => employeeService.validatePin(emp.id, inputPin)
+    });
+
+    if (!pinResult.confirmed) {
+      return;
+    }
+
     try {
-      await cashService.openRegister(b, c, authService.currentUser);
+      await cashService.openRegister(b, c, authService.currentUser, emp);
+      employeeService.setActiveEmployee(emp);
+
       this.renderCashRegister();
-      this.showToast('Turno de caixa aberto com sucesso!', 'success');
+      this.renderEmployees();
+      this.renderActiveOperatorHeader();
+      this.renderShiftRanking();
+
+      this.showToast(`Turno de caixa aberto com sucesso por ${emp.name}!`, 'success');
+      this.switchTab('venda');
     } catch (err) {
       this.showToast(err.message, 'error');
     }
   }
 
   async handleCloseRegister() {
+    const currentSession = cashService.getCurrentSession();
+    if (!currentSession) {
+      this.showToast('O caixa já se encontra fechado.', 'warning');
+      return;
+    }
+
+    const currentEmp = employeeService.getEmployeeById(currentSession.openedByEmployeeId) || 
+                       employeeService.findEmployeeByName(currentSession.openedByName) || 
+                       employeeService.getActiveEmployee();
+
+    // Solicita o PIN de confirmação do operador ou gerente
+    const pinResult = await pinModal.prompt({
+      title: 'Encerrar Turno de Caixa',
+      desc: `Digite o PIN do operador para confirmar o fechamento do turno:`,
+      employee: currentEmp,
+      validate: (inputPin) => {
+        if (currentEmp && employeeService.validatePin(currentEmp.id, inputPin)) return true;
+        // Permite também que qualquer colaborador com perfil Gerente/Admin autorize
+        const anyEmp = employeeService.findEmployeeByPin(inputPin);
+        return anyEmp && (anyEmp.role.includes('Gerente') || anyEmp.role.includes('Admin') || anyEmp.id === currentEmp?.id);
+      }
+    });
+
+    if (!pinResult.confirmed) {
+      return;
+    }
+
     const confirmed = await confirmModal.show({
-      title: 'Fechar Caixa',
-      message: 'Deseja realmente encerrar a sessão deste turno de caixa? Os valores do dia serão consolidados.',
+      title: 'Fechar Caixa & Encerrar Turno',
+      message: `Deseja consolidar as movimentações e encerrar a sessão do turno <strong>${currentSession.sessionCode || '#001'}</strong> de <strong>${currentEmp?.name || 'Operador'}</strong>?`,
       confirmText: 'Sim, Encerrar Turno',
       cancelText: 'Continuar Aberto',
       type: 'warning',
@@ -2148,11 +2342,50 @@ class OrvixApp {
         const sales = historyService.getSalesForDate(this.state.today);
         const expenses = expensesService.getExpensesForDate(this.state.today);
         const metrics = cashService.getTodayMetrics(sales, expenses);
-        await cashService.closeRegister(metrics.currentBalance, 'Fechamento de turno', authService.currentUser, sales, expenses);
+        
+        const closed = await cashService.closeRegister(
+          metrics.currentBalance, 
+          'Fechamento de turno', 
+          authService.currentUser, 
+          sales, 
+          expenses, 
+          currentEmp
+        );
+
         this.renderCashRegister();
-        this.showToast('Turno de caixa encerrado com sucesso!', 'info');
+        this.renderEmployees();
+        this.renderShiftRanking();
+        this.renderFullShiftsHistory();
+
+        this.showToast(`Turno ${closed.sessionCode || ''} encerrado com sucesso!`, 'info');
       } catch (err) {
         this.showToast(err.message, 'error');
+      }
+    }
+  }
+
+  async handleQuickSwitchShift() {
+    const currentSession = cashService.getCurrentSession();
+    if (!currentSession) {
+      this.switchTab('caixa');
+      return;
+    }
+
+    const opName = currentSession.openedByEmployeeName || currentSession.openedByName || 'Operador';
+    const confirmed = await confirmModal.show({
+      title: 'Troca de Turno de Caixa',
+      message: `Para passar o caixa para outro colaborador, é necessário encerrar o turno atual de <strong>${opName}</strong>. Deseja prosseguir com o fechamento?`,
+      confirmText: 'Sim, Encerrar e Trocar',
+      cancelText: 'Cancelar',
+      type: 'info',
+      icon: 'refresh-cw'
+    });
+
+    if (confirmed) {
+      await this.handleCloseRegister();
+      if (!cashService.isOpen()) {
+        this.switchTab('caixa');
+        this.showToast('Turno anterior encerrado! Selecione o próximo colaborador para iniciar o novo turno.', 'info');
       }
     }
   }
@@ -2851,6 +3084,11 @@ class OrvixApp {
 
     this.state.teamUnsubscribe = licenseService.subscribeTeamMembers(tenant?.id, (members) => {
       this.renderTeamMembers(members);
+      this.renderEmployees();
+      this.renderShiftRanking();
+      this.renderFullShiftsHistory();
+      this.renderActiveOperatorHeader();
+
       // Reavalia visibilidade do botão caso o cargo do usuário tenha mudado
       if (this.DOM.btnOpenEditTenantModal) {
         this.DOM.btnOpenEditTenantModal.style.display = this.isUserAdmin() ? 'inline-flex' : 'none';
@@ -2962,6 +3200,575 @@ class OrvixApp {
     }).join('');
 
     if (window.lucide) lucide.createIcons();
+  }
+
+  renderAll() {
+    this.renderCart();
+    this.renderCashRegister();
+    this.renderHistory();
+    this.renderOrders();
+    this.renderExpenses();
+    this.renderProductsGrid();
+    this.renderDiscountControls();
+    this.renderDiscountBalloon();
+    this.renderEmployees();
+    this.renderShiftRanking();
+    this.renderFullShiftsHistory();
+    this.renderActiveOperatorHeader();
+  }
+
+  switchTeamSubTab(subTabName = 'members') {
+    this.state.selectedTeamSubTab = subTabName;
+
+    // Atualiza botões
+    if (this.DOM.btnTeamTabMembers) this.DOM.btnTeamTabMembers.classList.toggle('active', subTabName === 'members');
+    if (this.DOM.btnTeamTabRanking) this.DOM.btnTeamTabRanking.classList.toggle('active', subTabName === 'ranking');
+    if (this.DOM.btnTeamTabShifts) this.DOM.btnTeamTabShifts.classList.toggle('active', subTabName === 'shifts');
+
+    // Atualiza visualizações
+    if (this.DOM.teamViewMembers) this.DOM.teamViewMembers.style.display = subTabName === 'members' ? 'block' : 'none';
+    if (this.DOM.teamViewRanking) this.DOM.teamViewRanking.style.display = subTabName === 'ranking' ? 'block' : 'none';
+    if (this.DOM.teamViewShifts) this.DOM.teamViewShifts.style.display = subTabName === 'shifts' ? 'block' : 'none';
+
+    if (subTabName === 'members') this.renderEmployees();
+    if (subTabName === 'ranking') this.renderShiftRanking();
+    if (subTabName === 'shifts') this.renderFullShiftsHistory();
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  renderEmployees() {
+    const employees = employeeService.getEmployees();
+    const activeEmp = employeeService.getActiveEmployee();
+
+    // 1. Atualiza Seletor no formulário de Abertura de Caixa
+    if (this.DOM.openingEmployeeSelect) {
+      const activeList = employees.filter(e => e.status === 'ativo');
+      if (activeList.length === 0) {
+        this.DOM.openingEmployeeSelect.innerHTML = `<option value="">Nenhum operador ativo</option>`;
+      } else {
+        this.DOM.openingEmployeeSelect.innerHTML = activeList
+          .map(e => `
+            <option value="${e.id}" ${activeEmp && activeEmp.id === e.id ? 'selected' : ''}>
+              ${e.name} — ${e.role} (PIN: ••••)
+            </option>
+          `).join('');
+      }
+    }
+
+    // 2. Atualiza badge de quantidade
+    if (this.DOM.teamMembersCountBadge) {
+      this.DOM.teamMembersCountBadge.innerText = employees.length;
+    }
+
+    // 3. Renderiza Grid de Cards de Funcionários
+    if (this.DOM.teamEmployeesGrid) {
+      if (employees.length === 0) {
+        this.DOM.teamEmployeesGrid.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 2.5rem; color: var(--text-muted);">
+            <i data-lucide="user-x" style="width: 48px; height: 48px; opacity: 0.5; margin-bottom: 0.5rem;"></i>
+            <p style="margin: 0; font-size: 0.95rem;">Nenhum funcionário cadastrado.</p>
+          </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      this.DOM.teamEmployeesGrid.innerHTML = employees.map(emp => {
+        const isCurrentActive = activeEmp && activeEmp.id === emp.id;
+        const initials = emp.name.slice(0, 2).toUpperCase();
+        const isAtivo = emp.status === 'ativo';
+
+        return `
+          <div class="team-employee-card ${!isAtivo ? 'inactive' : ''} ${isCurrentActive ? 'is-active-operator' : ''}">
+            ${isCurrentActive ? `
+              <div class="active-operator-badge-tag">
+                <i data-lucide="check-circle-2" style="width: 12px; height: 12px;"></i>
+                <span>Operador Atual</span>
+              </div>
+            ` : ''}
+
+            <div class="employee-card-head">
+              <div class="employee-avatar-circle" style="background: ${emp.avatarColor || 'linear-gradient(135deg, #7c3aed, #ec4899)'};">
+                ${initials}
+              </div>
+              <div class="employee-meta-info">
+                <span class="employee-card-name" title="${emp.name}">${emp.name}</span>
+                <div class="employee-card-role-row">
+                  <span class="employee-role-pill">${emp.role}</span>
+                  <span class="employee-status-pill ${emp.status}">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor;"></span>
+                    <span>${isAtivo ? 'Ativo' : 'Inativo'}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="employee-security-box">
+              <span>PIN de Vendas & Caixa:</span>
+              <span class="pin-masked-display">••••</span>
+            </div>
+
+            <div class="employee-card-actions">
+              ${isAtivo ? `
+                <button type="button" class="btn-card-action btn-assume-shift" data-action="assume" data-id="${emp.id}" title="Autenticar com PIN para assumir vendas">
+                  <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+                  <span>${isCurrentActive ? 'Em Operação' : 'Assumir Caixa'}</span>
+                </button>
+              ` : ''}
+              
+              <button type="button" class="btn-card-action btn-edit-employee" data-action="edit" data-id="${emp.id}" title="Editar dados">
+                <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+                <span>Editar</span>
+              </button>
+
+              <button type="button" class="btn-card-action btn-toggle-employee-status" data-action="toggle" data-id="${emp.id}" title="${isAtivo ? 'Inativar acesso' : 'Reativar acesso'}">
+                <i data-lucide="${isAtivo ? 'shield-off' : 'shield-check'}" style="width: 14px; height: 14px;"></i>
+                <span>${isAtivo ? 'Inativar' : 'Ativar'}</span>
+              </button>
+
+              <button type="button" class="btn-card-action btn-delete-employee" data-action="delete" data-id="${emp.id}" title="Excluir funcionário" style="color: var(--danger);">
+                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  renderShiftRanking() {
+    const period = this.state.selectedRankingPeriod || 'today';
+    const rankingData = employeeService.getShiftSalesRanking(
+      period, 
+      historyService.getAllSales(), 
+      cashService.getHistory()
+    );
+
+    // 1. Atualiza métricas de resumo no topo
+    if (this.DOM.rankSummaryRevenue) {
+      this.DOM.rankSummaryRevenue.innerText = `R$ ${rankingData.totalRevenue.toFixed(2)}`;
+    }
+    if (this.DOM.rankSummaryOrders) {
+      this.DOM.rankSummaryOrders.innerText = rankingData.totalSalesCount;
+    }
+    if (this.DOM.rankSummaryLeader) {
+      this.DOM.rankSummaryLeader.innerText = rankingData.topEmployee && rankingData.totalRevenue > 0 ? rankingData.topEmployee.name.split(' ')[0] : '--';
+    }
+
+    // 2. Renderiza Pódio Top 3
+    if (this.DOM.teamPodiumContainer) {
+      const top3 = rankingData.employeesRank.slice(0, 3);
+      if (top3.length === 0 || rankingData.totalRevenue === 0) {
+        this.DOM.teamPodiumContainer.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: var(--text-muted); width: 100%;">
+            <i data-lucide="trophy" style="width: 48px; height: 48px; opacity: 0.35; margin-bottom: 0.5rem;"></i>
+            <p style="margin: 0; font-size: 0.95rem;">Nenhuma venda registrada para os turnos deste período.</p>
+            <span style="font-size: 0.78rem;">Finalize vendas com os operadores para formar o pódio!</span>
+          </div>
+        `;
+      } else {
+        const rank1 = top3[0];
+        const rank2 = top3[1];
+        const rank3 = top3[2];
+
+        let html = '';
+
+        // 2º Lugar
+        if (rank2) {
+          html += `
+            <div class="podium-place rank-2">
+              <div class="podium-avatar-wrap">
+                <div class="podium-avatar" style="background: ${rank2.avatarColor};">
+                  ${rank2.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div class="podium-crown-badge">🥈</div>
+              </div>
+              <div class="podium-pedestal">
+                <span class="podium-emp-name">${rank2.name}</span>
+                <span class="podium-emp-role">${rank2.role}</span>
+                <span class="podium-emp-amount">R$ ${rank2.totalSalesAmount.toFixed(2)}</span>
+                <span class="podium-emp-orders">${rank2.salesCount} vendas &bull; Tkt R$ ${rank2.averageTicket.toFixed(2)}</span>
+              </div>
+            </div>
+          `;
+        }
+
+        // 1º Lugar (Centro)
+        if (rank1) {
+          html += `
+            <div class="podium-place rank-1">
+              <div class="podium-avatar-wrap">
+                <div class="podium-avatar" style="background: ${rank1.avatarColor};">
+                  ${rank1.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div class="podium-crown-badge">👑</div>
+              </div>
+              <div class="podium-pedestal">
+                <span class="podium-emp-name" style="font-size: 1.05rem;">${rank1.name}</span>
+                <span class="podium-emp-role">${rank1.role}</span>
+                <span class="podium-emp-amount" style="font-size: 1.3rem;">R$ ${rank1.totalSalesAmount.toFixed(2)}</span>
+                <span class="podium-emp-orders">${rank1.salesCount} vendas &bull; Tkt R$ ${rank1.averageTicket.toFixed(2)}</span>
+              </div>
+            </div>
+          `;
+        }
+
+        // 3º Lugar
+        if (rank3) {
+          html += `
+            <div class="podium-place rank-3">
+              <div class="podium-avatar-wrap">
+                <div class="podium-avatar" style="background: ${rank3.avatarColor};">
+                  ${rank3.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div class="podium-crown-badge">🥉</div>
+              </div>
+              <div class="podium-pedestal">
+                <span class="podium-emp-name">${rank3.name}</span>
+                <span class="podium-emp-role">${rank3.role}</span>
+                <span class="podium-emp-amount">R$ ${rank3.totalSalesAmount.toFixed(2)}</span>
+                <span class="podium-emp-orders">${rank3.salesCount} vendas &bull; Tkt R$ ${rank3.averageTicket.toFixed(2)}</span>
+              </div>
+            </div>
+          `;
+        }
+
+        this.DOM.teamPodiumContainer.innerHTML = html;
+      }
+    }
+
+    // 3. Renderiza Tabela de Classificação
+    if (this.DOM.teamRankingTbody) {
+      const maxRevenue = rankingData.employeesRank.length > 0 ? (rankingData.employeesRank[0].totalSalesAmount || 1) : 1;
+
+      if (rankingData.employeesRank.length === 0) {
+        this.DOM.teamRankingTbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+              Nenhum dado encontrado para o período selecionado.
+            </td>
+          </tr>
+        `;
+      } else {
+        this.DOM.teamRankingTbody.innerHTML = rankingData.employeesRank.map(emp => {
+          const percent = maxRevenue > 0 ? Math.round((emp.totalSalesAmount / maxRevenue) * 100) : 0;
+          const rankBadgeClass = emp.rank === 1 ? 'gold' : emp.rank === 2 ? 'silver' : emp.rank === 3 ? 'bronze' : '';
+
+          return `
+            <tr>
+              <td>
+                <span class="rank-badge-number ${rankBadgeClass}">${emp.rank}º</span>
+              </td>
+              <td>
+                <div class="ranking-emp-cell">
+                  <div class="ranking-emp-avatar" style="background: ${emp.avatarColor};">
+                    ${emp.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <strong style="color: var(--text-primary); font-size: 0.92rem;">${emp.name}</strong>
+                    <div class="ranking-progress-bar-wrap">
+                      <div class="ranking-progress-fill" style="width: ${percent}%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td><span style="font-size: 0.8rem; color: var(--text-secondary);">${emp.role}</span></td>
+              <td><strong>${emp.shiftsCount}</strong></td>
+              <td><strong>${emp.salesCount}</strong></td>
+              <td>R$ ${emp.averageTicket.toFixed(2)}</td>
+              <td style="color: #34d399;">R$ ${emp.cashTotal.toFixed(2)}</td>
+              <td style="color: #60a5fa;">R$ ${(emp.cardTotal + emp.pixTotal).toFixed(2)}</td>
+              <td style="text-align: right; font-weight: 800; font-size: 1rem; color: #10b981;">
+                R$ ${emp.totalSalesAmount.toFixed(2)}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // 4. Renderiza Tabela de Turnos Individuais
+    if (this.DOM.teamShiftsTbody) {
+      if (rankingData.shiftRankings.length === 0) {
+        this.DOM.teamShiftsTbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+              Nenhum turno registrado para o período selecionado.
+            </td>
+          </tr>
+        `;
+      } else {
+        this.DOM.teamShiftsTbody.innerHTML = rankingData.shiftRankings.map(s => {
+          const openTime = s.openedAt ? new Date(s.openedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+          const closeTime = s.closedAt ? new Date(s.closedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Em Aberto';
+          const isOpen = s.status === 'open';
+
+          return `
+            <tr>
+              <td><strong>${s.sessionCode}</strong></td>
+              <td>${s.dateStr || '--'}</td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="width: 26px; height: 26px; border-radius: 6px; background: ${s.avatarColor}; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem;">
+                    ${s.employeeName.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span>${s.employeeName}</span>
+                </div>
+              </td>
+              <td>${openTime} às ${closeTime}</td>
+              <td><strong>${s.totalSalesCount}</strong></td>
+              <td>R$ ${s.openingTotal.toFixed(2)}</td>
+              <td style="color: #10b981; font-weight: 700;">R$ ${s.totalSalesAmount.toFixed(2)}</td>
+              <td>
+                <span class="status-badge-styled ${isOpen ? 'open' : 'closed'}" style="font-size: 0.7rem; padding: 3px 8px;">
+                  ${isOpen ? 'Em Aberto' : 'Encerrado'}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  renderFullShiftsHistory() {
+    if (!this.DOM.fullShiftsHistoryTbody) return;
+
+    const history = cashService.getHistory();
+    const currentSession = cashService.getCurrentSession();
+    const all = currentSession ? [currentSession, ...history] : history;
+
+    if (all.length === 0) {
+      this.DOM.fullShiftsHistoryTbody.innerHTML = `
+        <tr>
+          <td colspan="11" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+            Nenhuma sessão de caixa ou turno gravado no histórico.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    this.DOM.fullShiftsHistoryTbody.innerHTML = all.map(s => {
+      const openTime = s.openedAt ? new Date(s.openedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+      const closeTime = s.closedAt ? new Date(s.closedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Em Aberto';
+      const isOpen = s.status === 'open';
+      const diff = s.drawerDifference || 0;
+      const diffColor = diff > 0 ? '#10b981' : diff < 0 ? '#ef4444' : 'var(--text-secondary)';
+
+      return `
+        <tr>
+          <td><strong>${s.sessionCode || '#001'}</strong></td>
+          <td>${s.dateStr || '--'}</td>
+          <td>${s.openedByEmployeeName || s.openedByName || 'Operador'}</td>
+          <td>${s.closedByEmployeeName || s.closedByName || (isOpen ? '--' : 'Operador')}</td>
+          <td>${openTime}</td>
+          <td>${closeTime}</td>
+          <td>R$ ${(s.openingTotal || 0).toFixed(2)}</td>
+          <td style="color: #10b981; font-weight: 700;">R$ ${(s.totalSalesAmount || 0).toFixed(2)}</td>
+          <td>${s.closingBalance !== null ? `R$ ${s.closingBalance.toFixed(2)}` : '--'}</td>
+          <td style="font-weight: 700; color: ${diffColor};">
+            ${diff !== 0 ? (diff > 0 ? `+R$ ${diff.toFixed(2)}` : `-R$ ${Math.abs(diff).toFixed(2)}`) : 'R$ 0,00'}
+          </td>
+          <td>
+            <span class="status-badge-styled ${isOpen ? 'open' : 'closed'}" style="font-size: 0.7rem; padding: 3px 8px;">
+              ${isOpen ? 'Em Aberto' : 'Encerrado'}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  renderActiveOperatorHeader() {
+    const active = employeeService.getActiveEmployee();
+    if (active) {
+      if (this.DOM.sidebarOperatorName) this.DOM.sidebarOperatorName.innerText = active.name;
+      if (this.DOM.sidebarOperatorRole) this.DOM.sidebarOperatorRole.innerText = active.role;
+      if (this.DOM.operatorInitials) {
+        this.DOM.operatorInitials.innerText = active.name.slice(0, 2).toUpperCase();
+        if (this.DOM.operatorInitials.parentElement) {
+          this.DOM.operatorInitials.parentElement.style.background = active.avatarColor;
+        }
+      }
+    }
+  }
+
+  openEmployeeModal(emp = null) {
+    if (this.DOM.employeeFormModal) {
+      if (emp) {
+        if (this.DOM.employeeModalTitle) this.DOM.employeeModalTitle.innerText = 'Editar Funcionário';
+        if (this.DOM.employeeFormId) this.DOM.employeeFormId.value = emp.id;
+        if (this.DOM.employeeFormName) this.DOM.employeeFormName.value = emp.name;
+        if (this.DOM.employeeFormRole) this.DOM.employeeFormRole.value = emp.role;
+        if (this.DOM.employeeFormPin) this.DOM.employeeFormPin.value = emp.pin;
+        if (this.DOM.employeeFormPhone) this.DOM.employeeFormPhone.value = emp.phone || '';
+        if (this.DOM.employeeFormStatus) this.DOM.employeeFormStatus.value = emp.status || 'ativo';
+      } else {
+        if (this.DOM.employeeModalTitle) this.DOM.employeeModalTitle.innerText = 'Novo Funcionário';
+        if (this.DOM.employeeFormId) this.DOM.employeeFormId.value = '';
+        if (this.DOM.employeeFormName) this.DOM.employeeFormName.value = '';
+        if (this.DOM.employeeFormRole) this.DOM.employeeFormRole.value = 'Operador de Caixa';
+        if (this.DOM.employeeFormPin) this.DOM.employeeFormPin.value = '';
+        if (this.DOM.employeeFormPhone) this.DOM.employeeFormPhone.value = '';
+        if (this.DOM.employeeFormStatus) this.DOM.employeeFormStatus.value = 'ativo';
+      }
+
+      this.DOM.employeeFormModal.style.display = 'flex';
+      setTimeout(() => this.DOM.employeeFormName?.focus(), 50);
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+
+  closeEmployeeModal() {
+    if (this.DOM.employeeFormModal) {
+      this.DOM.employeeFormModal.style.display = 'none';
+      if (this.DOM.employeeForm) this.DOM.employeeForm.reset();
+    }
+  }
+
+  async handleSaveEmployee() {
+    const id = this.DOM.employeeFormId?.value || null;
+    const name = this.DOM.employeeFormName?.value || '';
+    const role = this.DOM.employeeFormRole?.value || 'Operador de Caixa';
+    const pin = this.DOM.employeeFormPin?.value || '';
+    const phone = this.DOM.employeeFormPhone?.value || '';
+    const status = this.DOM.employeeFormStatus?.value || 'ativo';
+
+    if (!name.trim()) {
+      this.showToast('Informe o nome do funcionário.', 'warning');
+      this.DOM.employeeFormName?.focus();
+      return;
+    }
+
+    if (!pin.trim() || pin.trim().length < 4) {
+      this.showToast('O PIN deve conter pelo menos 4 dígitos numéricos.', 'warning');
+      this.DOM.employeeFormPin?.focus();
+      return;
+    }
+
+    try {
+      await employeeService.saveEmployee({
+        id,
+        name,
+        role,
+        pin,
+        phone,
+        status
+      });
+
+      this.closeEmployeeModal();
+      this.renderEmployees();
+      this.renderShiftRanking();
+      this.renderActiveOperatorHeader();
+      this.showToast(`Funcionário "${name}" salvo com sucesso!`, 'success');
+    } catch (err) {
+      this.showToast(err.message, 'error');
+    }
+  }
+
+  async handleAssumeShift(empId) {
+    const emp = employeeService.getEmployeeById(empId);
+    if (!emp) return;
+
+    if (emp.status !== 'ativo') {
+      this.showToast('Este colaborador está inativo no sistema.', 'warning');
+      return;
+    }
+
+    // Se o caixa estiver aberto com outro operador, avisa que é necessário fechar o turno anterior antes
+    const currentSession = cashService.getCurrentSession();
+    if (currentSession && cashService.isOpen() && currentSession.openedByEmployeeId !== emp.id) {
+      const confirmed = await confirmModal.show({
+        title: 'Caixa com Turno em Andamento',
+        message: `O caixa atual está aberto com o turno de <strong>${currentSession.openedByEmployeeName || 'outro operador'}</strong>. Para assumir este caixa, encerre o turno atual antes ou continue com o operador vinculado. Deseja trocar de turno agora?`,
+        confirmText: 'Sim, Trocar Turno',
+        cancelText: 'Cancelar',
+        type: 'warning',
+        icon: 'refresh-cw'
+      });
+      if (confirmed) {
+        await this.handleCloseRegister();
+      }
+      return;
+    }
+
+    // Solicita o PIN do operador para assumir
+    const pinResult = await pinModal.prompt({
+      title: 'Autenticação de Operador',
+      desc: `Digite seu PIN de 4 dígitos para assumir como operador:`,
+      employee: emp,
+      validate: (inputPin) => employeeService.validatePin(emp.id, inputPin)
+    });
+
+    if (pinResult.confirmed) {
+      employeeService.setActiveEmployee(emp);
+      this.renderEmployees();
+      this.renderActiveOperatorHeader();
+      this.renderCashRegister();
+      this.showToast(`Operador alterado para "${emp.name}". Vendas atribuídas a este operador!`, 'success');
+      this.switchTab('venda');
+    }
+  }
+
+  async handleToggleEmployeeStatus(empId) {
+    const emp = employeeService.getEmployeeById(empId);
+    if (!emp) return;
+
+    const actionText = emp.status === 'ativo' ? 'inativar' : 'reativar';
+    const confirmed = await confirmModal.show({
+      title: `${emp.status === 'ativo' ? 'Inativar' : 'Reativar'} Funcionário`,
+      message: `Deseja realmente ${actionText} o colaborador <strong>"${emp.name}"</strong>?`,
+      confirmText: `Sim, ${actionText}`,
+      cancelText: 'Cancelar',
+      type: emp.status === 'ativo' ? 'warning' : 'info',
+      icon: emp.status === 'ativo' ? 'shield-off' : 'shield-check'
+    });
+
+    if (confirmed) {
+      try {
+        await employeeService.toggleStatus(empId);
+        this.renderEmployees();
+        this.renderShiftRanking();
+        this.renderActiveOperatorHeader();
+        this.showToast(`Status do colaborador atualizado com sucesso!`, 'info');
+      } catch (err) {
+        this.showToast(err.message, 'error');
+      }
+    }
+  }
+
+  async handleDeleteEmployee(empId) {
+    const emp = employeeService.getEmployeeById(empId);
+    if (!emp) return;
+
+    const confirmed = await confirmModal.show({
+      title: 'Excluir Funcionário',
+      message: `Deseja excluir definitivamente o cadastro do colaborador <strong>"${emp.name}"</strong>? O histórico de vendas anteriores continuará preservado.`,
+      confirmText: 'Sim, Excluir',
+      cancelText: 'Cancelar',
+      type: 'danger',
+      icon: 'trash-2'
+    });
+
+    if (confirmed) {
+      try {
+        await employeeService.deleteEmployee(empId);
+        this.renderEmployees();
+        this.renderShiftRanking();
+        this.renderActiveOperatorHeader();
+        this.showToast(`Colaborador "${emp.name}" removido com sucesso.`, 'info');
+      } catch (err) {
+        this.showToast(err.message, 'error');
+      }
+    }
   }
 
   showToast(message, type = 'info') {

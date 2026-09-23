@@ -45,7 +45,7 @@ export class CashService {
   /**
    * Abre uma nova sessão de caixa (turno)
    */
-  async openRegister(bills, coins, user = null) {
+  async openRegister(bills, coins, user = null, employee = null) {
     if (this.isOpen()) {
       throw new Error('Já existe um turno de caixa aberto. Feche a sessão atual antes de abrir uma nova.');
     }
@@ -61,6 +61,10 @@ export class CashService {
     const todaySessions = this.history.filter(s => s.dateStr === dateStr);
     const sessionNumber = todaySessions.length + 1;
 
+    const opName = employee?.name || user?.displayName || user?.email?.split('@')[0] || 'Operador';
+    const opRole = employee?.role || 'Operador de Caixa';
+    const opId = employee?.id || user?.uid || 'local-user';
+
     const sessionData = {
       id: sessionId,
       tenantId: this.currentTenantId,
@@ -70,14 +74,21 @@ export class CashService {
       status: 'open',
       openedAt: now.toISOString(),
       openedByUid: user?.uid || 'local-user',
-      openedByName: user?.displayName || user?.email?.split('@')[0] || 'Operador',
+      openedByName: opName,
+      openedByEmployeeId: opId,
+      openedByEmployeeName: opName,
+      openedByEmployeeRole: opRole,
       openingBills: b,
       openingCoins: c,
       openingTotal: total,
       closedAt: null,
       closedByUid: null,
       closedByName: null,
+      closedByEmployeeId: null,
+      closedByEmployeeName: null,
       closingBalance: null,
+      expectedBalance: null,
+      drawerDifference: 0,
       observation: ''
     };
 
@@ -117,27 +128,58 @@ export class CashService {
   /**
    * Fecha o turno atual de caixa
    */
-  async closeRegister(closingBalance, observation = '', user = null, sessionSales = [], sessionExpenses = []) {
+  async closeRegister(closingBalance, observation = '', user = null, sessionSales = [], sessionExpenses = [], employee = null) {
     if (!this.isOpen()) throw new Error('O caixa já se encontra fechado.');
 
     const closeBal = parseFloat(closingBalance) || 0;
     const now = new Date();
 
     // Métricas específicas das vendas desta sessão de caixa
+    let cashSales = 0;
+    let cardSales = 0;
+    let pixSales = 0;
+
+    sessionSales.forEach(sale => {
+      const method = (sale.paymentMethod || '').toLowerCase();
+      const val = parseFloat(sale.total) || 0;
+      if (method.includes('dinheiro') || method === 'cash') {
+        cashSales += val;
+      } else if (method.includes('cart') || method === 'card') {
+        cardSales += val;
+      } else if (method.includes('pix')) {
+        pixSales += val;
+      } else {
+        cashSales += val;
+      }
+    });
+
     const totalSalesAmount = sessionSales.reduce((s, v) => s + (v.total || 0), 0);
     const totalExpensesAmount = sessionExpenses.reduce((s, e) => s + (parseFloat(e.value) || 0), 0);
+    const openingTotal = this.currentSession.openingTotal || 0;
+    const expectedBalance = parseFloat((openingTotal + cashSales - totalExpensesAmount).toFixed(2));
+    const drawerDifference = parseFloat((closeBal - expectedBalance).toFixed(2));
+
+    const closerName = employee?.name || user?.displayName || user?.email?.split('@')[0] || this.currentSession.openedByName || 'Operador';
+    const closerId = employee?.id || user?.uid || null;
 
     const closedRecord = {
       ...this.currentSession,
       status: 'closed',
       closedAt: now.toISOString(),
       closedByUid: user?.uid || null,
-      closedByName: user?.displayName || user?.email?.split('@')[0] || this.currentSession.openedByName || 'Operador',
+      closedByName: closerName,
+      closedByEmployeeId: closerId,
+      closedByEmployeeName: closerName,
       closingBalance: closeBal,
+      expectedBalance: expectedBalance,
+      drawerDifference: drawerDifference,
       observation: observation.trim(),
       totalSalesCount: sessionSales.length,
       totalSalesAmount: parseFloat(totalSalesAmount.toFixed(2)),
-      totalExpensesAmount: parseFloat(totalExpensesAmount.toFixed(2))
+      totalExpensesAmount: parseFloat(totalExpensesAmount.toFixed(2)),
+      cashSales: parseFloat(cashSales.toFixed(2)),
+      cardSales: parseFloat(cardSales.toFixed(2)),
+      pixSales: parseFloat(pixSales.toFixed(2))
     };
 
     // Adiciona ao histórico (mais recentes primeiro)
@@ -153,11 +195,18 @@ export class CashService {
           closedAt: closedRecord.closedAt,
           closedByUid: closedRecord.closedByUid,
           closedByName: closedRecord.closedByName,
+          closedByEmployeeId: closedRecord.closedByEmployeeId,
+          closedByEmployeeName: closedRecord.closedByEmployeeName,
           closingBalance: closedRecord.closingBalance,
+          expectedBalance: closedRecord.expectedBalance,
+          drawerDifference: closedRecord.drawerDifference,
           observation: closedRecord.observation,
           totalSalesCount: closedRecord.totalSalesCount,
           totalSalesAmount: closedRecord.totalSalesAmount,
           totalExpensesAmount: closedRecord.totalExpensesAmount,
+          cashSales: closedRecord.cashSales,
+          cardSales: closedRecord.cardSales,
+          pixSales: closedRecord.pixSales,
           serverUpdated: serverTimestamp()
         });
       } catch (err) {

@@ -37,12 +37,22 @@ export class HistoryService {
       change: parseFloat((saleData.change || 0).toFixed(2)),
       orderDuration: saleData.orderDuration || null,
       fromOrder: Boolean(saleData.fromOrder),
-      isManualSale: Boolean(saleData.isManualSale)
+      isManualSale: Boolean(saleData.isManualSale),
+      cashSessionId: saleData.cashSessionId || null,
+      employeeId: saleData.employeeId || null,
+      employeeName: saleData.employeeName || saleData.operatorName || 'Operador',
+      employeeRole: saleData.employeeRole || 'Operador',
+      operatorName: saleData.operatorName || saleData.employeeName || 'Operador',
+      operatorUid: saleData.operatorUid || null
     };
 
     this.salesHistory[dateKey].unshift(newSale);
     this.saveSales();
     return newSale;
+  }
+
+  getAllSales() {
+    return this.salesHistory;
   }
 
   deleteSale(dateStr, saleId, inputPassword) {
