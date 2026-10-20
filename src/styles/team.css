@@ -230,17 +230,22 @@
 /* Ações do Card de Funcionário */
 .employee-card-actions {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
   border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
   padding-top: 0.85rem;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
-.btn-card-action {
-  flex: 1;
-  min-width: 80px;
-  height: 36px;
+.employee-card-actions-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.employee-card-actions .btn-card-action {
+  height: 34px;
   padding: 0 10px;
   border-radius: var(--radius-md, 8px);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
@@ -251,26 +256,67 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.btn-card-action:hover {
+.employee-card-actions-sub .btn-card-action {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.employee-card-actions-sub .btn-delete-employee {
+  flex: 0 0 34px;
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
+  padding: 0;
+}
+
+.employee-card-actions .btn-card-action:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.btn-card-action.btn-assume-shift {
+.employee-card-actions .btn-assume-shift {
+  width: 100%;
+  flex: 1 1 100%;
+  height: 38px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.25));
-  border-color: rgba(16, 185, 129, 0.4);
+  border: 1px solid rgba(16, 185, 129, 0.4);
   color: #34d399;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
 }
 
-.btn-card-action.btn-assume-shift:hover {
+.employee-card-actions .btn-assume-shift:hover {
   background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff;
   border-color: transparent;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  transform: translateY(-1px);
+}
+
+.employee-card-actions .btn-assume-shift.is-current-operator {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(5, 150, 105, 0.35));
+  border: 1px solid rgba(52, 211, 153, 0.6);
+  color: #a7f3d0;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.employee-card-actions .btn-assume-shift.is-current-operator:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.38), rgba(5, 150, 105, 0.45));
+  color: #ffffff;
+}
+
+.employee-card-actions .btn-delete-employee:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171 !important;
 }
 
 /* ==========================================================================

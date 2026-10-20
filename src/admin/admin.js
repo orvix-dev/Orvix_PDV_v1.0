@@ -185,7 +185,7 @@ class MasterAdminApp {
       this.DOM.newLicenseDuration.value = '30';
       this.DOM.newLicenseDevices.value = '3';
       this.DOM.newLicenseNotes.value = '';
-      this.DOM.newLicenseKey.value = licenseService.generateRandomLicenseKey('LOJA');
+      this.DOM.newLicenseKey.value = licenseService.generateRandomLicenseKey();
       this.DOM.newLicenseModal.style.display = 'flex';
       this.DOM.newTenantName.focus();
     };
@@ -204,8 +204,7 @@ class MasterAdminApp {
 
     // Gerador de chave aleatória no formulário
     this.DOM.btnGenerateKeyPreview?.addEventListener('click', () => {
-      const name = this.DOM.newTenantName.value;
-      this.DOM.newLicenseKey.value = licenseService.generateRandomLicenseKey(name);
+      this.DOM.newLicenseKey.value = licenseService.generateRandomLicenseKey();
     });
 
     // Ajuste de duração conforme o plano
@@ -643,7 +642,7 @@ class MasterAdminApp {
     this.DOM.newLicenseDuration.value = '30';
     this.DOM.newLicenseDevices.value = '3';
     this.DOM.newLicenseNotes.value = `Nova loja vinculada a ${email}`;
-    this.DOM.newLicenseKey.value = licenseService.generateRandomLicenseKey(store);
+    this.DOM.newLicenseKey.value = licenseService.generateRandomLicenseKey();
     this.DOM.newLicenseModal.style.display = 'flex';
     this.DOM.newTenantName.focus();
     this.showToast(`Configurando nova loja para ${email}`, 'info');

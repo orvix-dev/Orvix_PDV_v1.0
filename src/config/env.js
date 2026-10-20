@@ -35,6 +35,27 @@ export const env = {
   masterAdminPin: cleanEnv(import.meta.env.VITE_MASTER_ADMIN_PIN) || '101520',
 
   /**
+   * Validação de sessão / licença (tela de carregamento)
+   * - timeoutMs: tempo máximo total aguardando o servidor antes de exibir erro
+   * - slowHintMs: a partir deste tempo exibe o aviso "está demorando mais que o normal"
+   * - errorAutoLogoutSeconds: tempo em tela de erro até retornar automaticamente ao login
+   */
+  session: {
+    timeoutMs: parseInt(cleanEnv(import.meta.env.VITE_SESSION_TIMEOUT_MS), 10) || 8000,
+    slowHintMs: parseInt(cleanEnv(import.meta.env.VITE_SESSION_SLOW_HINT_MS), 10) || 3500,
+    errorAutoLogoutSeconds: parseInt(cleanEnv(import.meta.env.VITE_SESSION_ERROR_LOGOUT_SECONDS), 10) || 60
+  },
+
+  /**
+   * Canais de suporte exibidos nas telas de erro
+   * VITE_SUPPORT_WHATSAPP: apenas dígitos com DDI (ex: 5511999998888)
+   */
+  support: {
+    whatsapp: cleanEnv(import.meta.env.VITE_SUPPORT_WHATSAPP).replace(/\D/g, ''),
+    email: cleanEnv(import.meta.env.VITE_SUPPORT_EMAIL) || 'orvixsolucoes@gmail.com'
+  },
+
+  /**
    * Valida se um e-mail ou PIN possui autorização Master SuperAdmin
    */
   isMasterAdmin(email = '', pin = '') {

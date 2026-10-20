@@ -480,10 +480,18 @@ export class LoginFormComponent {
     }
   }
 
+  show() {
+    this.showOverlay();
+  }
+
   hideOverlay() {
     if (this.overlay) {
       this.overlay.classList.add('hidden');
     }
+  }
+
+  hide() {
+    this.hideOverlay();
   }
 
   async handleLogin() {

@@ -25,6 +25,10 @@ export class AuthService {
     this.currentUser = null;
     this.listeners = [];
     this.userDocUnsubscribe = null;
+    this._authReady = false;
+    this._authReadyPromise = new Promise((resolve) => {
+      this._resolveAuthReady = resolve;
+    });
     this.init();
   }
 
@@ -38,13 +42,33 @@ export class AuthService {
     // Se Firebase estiver disponível, escuta mudanças de autenticação do Firebase Auth
     if (firebaseAuth) {
       onAuthStateChanged(firebaseAuth, async (user) => {
-        if (user) {
-          await this.handleUserAuthenticated(user);
-        } else {
-          this.handleUserSignedOut();
+        try {
+          if (user) {
+            await this.handleUserAuthenticated(user);
+          } else {
+            this.handleUserSignedOut();
+          }
+        } finally {
+          this._markAuthReady();
         }
       });
+    } else {
+      this._markAuthReady();
     }
+  }
+
+  _markAuthReady() {
+    if (this._authReady) return;
+    this._authReady = true;
+    this._resolveAuthReady();
+  }
+
+  /**
+   * Resolve quando o Firebase Auth terminou de restaurar a sessão (token válido)
+   * e o perfil do usuário foi sincronizado. Necessário antes de consultar o Firestore.
+   */
+  waitForAuthReady() {
+    return this._authReadyPromise;
   }
 
   /**
@@ -462,7 +486,12 @@ export class AuthService {
    * Encerra a sessão
    */
   async logout() {
-    if (firebaseAuth && (this.currentUser?.provider === 'firebase' || this.currentUser?.provider === 'google.com')) {
+    if (this.userDocUnsubscribe) {
+      this.userDocUnsubscribe();
+      this.userDocUnsubscribe = null;
+    }
+    // Encerra a sessão Firebase para qualquer provedor (password, google.com...)
+    if (firebaseAuth && firebaseAuth.currentUser) {
       try {
         await firebaseSignOut(firebaseAuth);
       } catch (error) {

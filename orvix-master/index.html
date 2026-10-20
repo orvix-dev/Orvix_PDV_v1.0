@@ -300,7 +300,7 @@
           <div class="form-group">
             <label for="finalize-license-key">Chave de Ativação Gerada</label>
             <div class="input-with-action">
-              <input type="text" id="finalize-license-key" class="admin-input mono" placeholder="ORVIX-LOJA-XXXX" required>
+              <input type="text" id="finalize-license-key" class="admin-input mono" placeholder="ORVIX-XXXX-YYYY" required>
               <button type="button" class="btn btn-secondary btn-sm" id="btn-generate-finalize-key" title="Gerar novo código">
                 <i data-lucide="sparkles"></i>
                 <span>Gerar</span>
@@ -391,7 +391,7 @@
           <div class="form-group">
             <label for="new-license-key">Código da Chave (Opcional - deixe em branco para gerar automático)</label>
             <div class="input-with-action">
-              <input type="text" id="new-license-key" class="admin-input mono" placeholder="ORVIX-LOJA-XXXX">
+              <input type="text" id="new-license-key" class="admin-input mono" placeholder="ORVIX-XXXX-YYYY">
               <button type="button" class="btn btn-secondary btn-sm" id="btn-generate-key-preview" title="Gerar código aleatório">
                 <i data-lucide="sparkles"></i>
                 <span>Gerar</span>
@@ -426,6 +426,150 @@
       </form>
     </div>
   </div>
+
+  <!-- ========================================================
+       MODAL 3: EDITAR ESTABELECIMENTO & LICENÇA
+       ======================================================== -->
+  <div class="modal-backdrop" id="edit-store-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div class="modal-header-icon" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8;">
+          <i data-lucide="edit-3"></i>
+        </div>
+        <div>
+          <h3 class="modal-title">Editar Estabelecimento & Licença</h3>
+          <p class="modal-sub">Altere dados cadastrais, e-mail do proprietário ou planos mantendo o histórico de vendas intacto.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="close-edit-store-modal">&times;</button>
+      </div>
+
+      <form id="edit-store-form">
+        <div class="modal-body">
+          <input type="hidden" id="edit-tenant-id">
+          <input type="hidden" id="edit-current-owner-email">
+
+          <!-- Chave e Status Atual -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="edit-license-key">Chave de Ativação (Identificador Único)</label>
+              <div class="input-with-action">
+                <input type="text" id="edit-license-key" class="admin-input mono" readonly style="opacity: 0.85; background: var(--bg-surface);">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-edit-key" title="Copiar Chave">
+                  <i data-lucide="copy"></i>
+                  <span>Copiar</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-license-status">Status de Acesso</label>
+              <select id="edit-license-status" class="admin-input">
+                <option value="ativo">Ativo (PDV Liberado)</option>
+                <option value="bloqueado">Bloqueado (Acesso Suspenso)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Nome da Loja -->
+          <div class="form-group">
+            <label for="edit-tenant-name">Nome do Estabelecimento / Loja *</label>
+            <input type="text" id="edit-tenant-name" class="admin-input" placeholder="Ex: Açaí da Serra - Matriz" required>
+          </div>
+
+          <!-- Seção de E-mail com Aviso & Histórico -->
+          <div class="edit-email-section-box">
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label for="edit-owner-email" style="margin-bottom: 0;">E-mail do Proprietário (Ativo para Login) *</label>
+                <span class="badge-single-active">
+                  <i data-lucide="shield-check" style="width: 12px; height: 12px;"></i>
+                  <span>1 e-mail ativo por vez</span>
+                </span>
+              </div>
+              <input type="email" id="edit-owner-email" class="admin-input" placeholder="cliente@email.com" required>
+            </div>
+
+            <!-- Box informativo sobre preservação de vendas -->
+            <div class="email-persistence-notice">
+              <i data-lucide="database" style="color: #38bdf8; flex-shrink: 0; width: 18px; height: 18px;"></i>
+              <div>
+                <strong>Histórico de Vendas 100% Preservado:</strong>
+                <span>Todas as comandas, caixas, colaboradores e vendas são vinculados ao ID do estabelecimento. Alterar o e-mail não afeta nenhum dado histórico do PDV.</span>
+              </div>
+            </div>
+
+            <!-- Histórico de E-mails Anteriores -->
+            <div id="edit-email-history-block" style="display: none; margin-top: 0.75rem;">
+              <span class="email-history-title">
+                <i data-lucide="history" style="width: 14px; height: 14px;"></i>
+                <span>Histórico de E-mails Anteriores deste Estabelecimento:</span>
+              </span>
+              <div id="edit-email-history-list" class="email-history-list"></div>
+            </div>
+          </div>
+
+          <!-- Proprietário e Contato -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="edit-owner-name">Nome do Proprietário / Responsável</label>
+              <input type="text" id="edit-owner-name" class="admin-input" placeholder="Nome do cliente">
+            </div>
+            <div class="form-group">
+              <label for="edit-owner-phone">WhatsApp / Telefone de Contato</label>
+              <input type="tel" id="edit-owner-phone" class="admin-input" placeholder="Ex: 11987654321">
+            </div>
+          </div>
+
+          <!-- Plano, Validade e Limite de Caixas -->
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="edit-license-plan">Plano / Modalidade</label>
+              <select id="edit-license-plan" class="admin-input">
+                <option value="Mensal Pro">Mensal Pro (30 dias)</option>
+                <option value="Trimestral">Trimestral (90 dias)</option>
+                <option value="Semestral">Semestral (180 dias)</option>
+                <option value="Anual VIP">Anual VIP (365 dias)</option>
+                <option value="Vitalício">Vitalício (Ilimitado)</option>
+                <option value="Trial Teste">Trial Teste (7 dias)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-license-duration-add">Validade Adicional</label>
+              <select id="edit-license-duration-add" class="admin-input">
+                <option value="0" selected>Manter validade atual</option>
+                <option value="30">+30 dias adicionais</option>
+                <option value="60">+60 dias adicionais</option>
+                <option value="90">+90 dias adicionais</option>
+                <option value="180">+180 dias adicionais</option>
+                <option value="365">+1 ano adicional</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-license-devices">Limite de Caixas</label>
+              <input type="number" id="edit-license-devices" class="admin-input" value="3" min="1" max="50">
+            </div>
+          </div>
+
+          <!-- Observações Internas -->
+          <div class="form-group">
+            <label for="edit-license-notes">Observações Comerciais / Internas</label>
+            <input type="text" id="edit-license-notes" class="admin-input" placeholder="Ex: Cliente VIP, chave alterada em 19/10...">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-edit-store">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-edit-store">
+            <i data-lucide="check"></i>
+            <span>Salvar Alterações</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 
   <!-- Container de Toasts de Feedback -->
   <div id="master-toast-container" class="master-toast-container"></div>

@@ -1113,60 +1113,13 @@ export class LicenseService {
     if (!user) return [];
     if (user.status === 'pendente' || user.status === 'bloqueado') return [];
 
-    const list = [];
-    const seen = new Set();
-
     if (firebaseDb && user.email) {
       try {
-        const cleanEmail = user.email.toLowerCase().trim();
-        
-        const fetchFirestoreTenants = async () => {
-          const qDono = query(collection(firebaseDb, 'tenants'), where('donoEmail', '==', cleanEmail));
-          const snapDono = await getDocs(qDono);
-          snapDono.forEach(docSnap => {
-            const t = docSnap.data();
-            if (t && t.id && !seen.has(t.id)) {
-              seen.add(t.id);
-              list.push(t);
-            }
-          });
-
-          if (user.uid) {
-            const qOwner = query(collection(firebaseDb, 'tenants'), where('ownerUid', '==', user.uid));
-            const snapOwner = await getDocs(qOwner);
-            snapOwner.forEach(docSnap => {
-              const t = docSnap.data();
-              if (t && t.id && !seen.has(t.id)) {
-                seen.add(t.id);
-                list.push(t);
-              }
-            });
-          }
-
-          // Busca também caso o usuário tenha um tenantId diretamente vinculado no seu perfil
-          if (user.tenantId && !seen.has(user.tenantId)) {
-            try {
-              const tDoc = await getDoc(doc(firebaseDb, 'tenants', user.tenantId));
-              if (tDoc.exists()) {
-                const t = tDoc.data();
-                if (t && t.id && !seen.has(t.id)) {
-                  seen.add(t.id);
-                  list.push(t);
-                }
-              }
-            } catch (err) {
-              console.warn('[LicenseService] Erro ao buscar tenant vinculado:', err);
-            }
-          }
-
-          return list;
-        };
-
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('FIRESTORE_GET_TENANTS_TIMEOUT')), 2000)
         );
 
-        await Promise.race([fetchFirestoreTenants(), timeoutPromise]);
+        const list = await Promise.race([this._queryRemoteTenants(user), timeoutPromise]);
         if (list.length > 0) {
           return list;
         }
@@ -1175,14 +1128,90 @@ export class LicenseService {
       }
     }
 
+    return this._getLocalTenantsFallback(user);
+  }
+
+  /**
+   * Versão ESTRITA usada na validação de sessão: consulta o servidor e PROPAGA
+   * erros de rede/permissão (sem fallback silencioso). Se o servidor responder
+   * com sucesso mas sem lojas, aplica a regra local (master / loja vinculada).
+   */
+  async fetchUserTenantsRemote(user) {
+    if (!user) return [];
+    if (user.status === 'pendente' || user.status === 'bloqueado') return [];
+    if (!firebaseDb || !user.email) return this._getLocalTenantsFallback(user);
+
+    const list = await this._queryRemoteTenants(user);
+    return list.length > 0 ? list : this._getLocalTenantsFallback(user);
+  }
+
+  /**
+   * Busca o documento da chave de licença diretamente no servidor (sem cache local).
+   * Retorna null se a chave não existir.
+   */
+  async fetchLicenseRemote(key) {
+    if (!key) return null;
+    const cleanKey = key.trim().toUpperCase();
+    if (!firebaseDb) return this.getLocalLicense(cleanKey);
+
+    const snap = await getDoc(doc(firebaseDb, 'licenses', cleanKey));
+    if (snap.exists()) return { id: snap.id, ...snap.data() };
+    return DEFAULT_PREDEFINED_LICENSES[cleanKey] || null;
+  }
+
+  /**
+   * Obtém uma licença do armazenamento local (modo demo / offline)
+   */
+  getLocalLicense(key) {
+    if (!key) return null;
+    const cleanKey = key.trim().toUpperCase();
+    const licenses = StorageService.get(STORAGE_LICENSES_KEY, DEFAULT_PREDEFINED_LICENSES);
+    return licenses[cleanKey] || DEFAULT_PREDEFINED_LICENSES[cleanKey] || null;
+  }
+
+  async _queryRemoteTenants(user) {
+    const list = [];
+    const seen = new Set();
+    const push = (t) => {
+      if (t && t.id && !seen.has(t.id)) {
+        seen.add(t.id);
+        list.push(t);
+      }
+    };
+
+    const cleanEmail = user.email.toLowerCase().trim();
+
+    // Consultas independentes em paralelo para reduzir o tempo de resposta
+    const queries = [
+      getDocs(query(collection(firebaseDb, 'tenants'), where('donoEmail', '==', cleanEmail))),
+      getDocs(query(collection(firebaseDb, 'tenants'), where('emailsVinculados', 'array-contains', cleanEmail)))
+    ];
+    if (user.uid) {
+      queries.push(getDocs(query(collection(firebaseDb, 'tenants'), where('ownerUid', '==', user.uid))));
+    }
+    const snaps = await Promise.all(queries);
+    snaps.forEach(snap => snap.forEach(docSnap => push(docSnap.data())));
+
+    // Busca também caso o usuário tenha um tenantId diretamente vinculado no seu perfil
+    if (user.tenantId && !seen.has(user.tenantId)) {
+      const tDoc = await getDoc(doc(firebaseDb, 'tenants', user.tenantId));
+      if (tDoc.exists()) push(tDoc.data());
+    }
+
+    return list;
+  }
+
+  _getLocalTenantsFallback(user) {
     // Modo Local / Fallback Seguro:
     // Nunca concede acesso ao tenant matriz se o usuário for novo/pendente ou não for administrador
+    const list = [];
     const isMaster = user.email && env.isMasterAdmin(user.email);
     const local = this.getLocalTenant();
     const isLinkedToLocal = local && (
       (user.tenantId && user.tenantId === local.id) ||
       (local.donoEmail && user.email && local.donoEmail.toLowerCase() === user.email.toLowerCase()) ||
-      (local.ownerEmail && user.email && local.ownerEmail.toLowerCase() === user.email.toLowerCase())
+      (local.ownerEmail && user.email && local.ownerEmail.toLowerCase() === user.email.toLowerCase()) ||
+      (Array.isArray(local.emailsVinculados) && user.email && local.emailsVinculados.some(e => e.toLowerCase() === user.email.toLowerCase()))
     );
 
     if (isMaster || isLinkedToLocal) {
@@ -1191,6 +1220,7 @@ export class LicenseService {
 
     return list;
   }
+
 
   /**
    * Adiciona uma nova loja/ponto para um cliente existente gerando nova chave de uso único
@@ -1270,18 +1300,20 @@ export class LicenseService {
   }
 
   /**
-   * Gera uma chave de licença amigável (ex: ORVIX-SERRA-9281)
+   * Utilitário para gerar chave de ativação segura e profissional
+   * Padrão SaaS: ORVIX-XXXX-YYYY (ex: ORVIX-7K9M-4821)
+   * Caracteres seguros alfanuméricos sem termos genéricos ou previsíveis
    */
-  generateRandomLicenseKey(tenantName = '') {
-    let prefix = 'LOJA';
-    if (tenantName) {
-      const clean = tenantName.toUpperCase().replace(/[^A-Z]/g, '');
-      if (clean.length >= 3) {
-        prefix = clean.substring(0, 5);
+  generateRandomLicenseKey() {
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const pick = (len) => {
+      let res = '';
+      for (let i = 0; i < len; i++) {
+        res += chars.charAt(Math.floor(Math.random() * chars.length));
       }
-    }
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    return `ORVIX-${prefix}-${rand}`;
+      return res;
+    };
+    return `ORVIX-${pick(4)}-${pick(4)}`;
   }
 
   _getAllLocalLicenses() {

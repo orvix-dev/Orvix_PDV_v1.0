@@ -111,6 +111,28 @@ class OrvixMasterApp {
       newLicenseNotes: document.getElementById('new-license-notes'),
       btnGenerateKeyPreview: document.getElementById('btn-generate-key-preview'),
 
+      // Modal: Editar Estabelecimento & Licença
+      editStoreModal: document.getElementById('edit-store-modal'),
+      closeEditStoreModalBtn: document.getElementById('close-edit-store-modal'),
+      cancelEditStoreBtn: document.getElementById('btn-cancel-edit-store'),
+      editStoreForm: document.getElementById('edit-store-form'),
+      editTenantId: document.getElementById('edit-tenant-id'),
+      editCurrentOwnerEmail: document.getElementById('edit-current-owner-email'),
+      editLicenseKey: document.getElementById('edit-license-key'),
+      btnCopyEditKey: document.getElementById('btn-copy-edit-key'),
+      editLicenseStatus: document.getElementById('edit-license-status'),
+      editTenantName: document.getElementById('edit-tenant-name'),
+      editOwnerEmail: document.getElementById('edit-owner-email'),
+      editOwnerName: document.getElementById('edit-owner-name'),
+      editOwnerPhone: document.getElementById('edit-owner-phone'),
+      editLicensePlan: document.getElementById('edit-license-plan'),
+      editLicenseDurationAdd: document.getElementById('edit-license-duration-add'),
+      editLicenseDevices: document.getElementById('edit-license-devices'),
+      editLicenseNotes: document.getElementById('edit-license-notes'),
+      editEmailHistoryBlock: document.getElementById('edit-email-history-block'),
+      editEmailHistoryList: document.getElementById('edit-email-history-list'),
+      btnSaveEditStore: document.getElementById('btn-save-edit-store'),
+
       // Toast
       toastContainer: document.getElementById('master-toast-container')
     };
@@ -237,8 +259,7 @@ class OrvixMasterApp {
     });
 
     this.DOM.btnGenerateKeyPreview?.addEventListener('click', () => {
-      const name = this.DOM.newTenantName.value;
-      this.DOM.newLicenseKey.value = masterLicenseService.generateRandomLicenseKey(name);
+      this.DOM.newLicenseKey.value = masterLicenseService.generateRandomLicenseKey();
     });
 
     this.DOM.newLicensePlan?.addEventListener('change', (e) => {
@@ -280,8 +301,7 @@ class OrvixMasterApp {
     });
 
     this.DOM.btnGenerateFinalizeKey?.addEventListener('click', () => {
-      const name = this.DOM.finalizeTenantName.value;
-      this.DOM.finalizeKey.value = masterLicenseService.generateRandomLicenseKey(name);
+      this.DOM.finalizeKey.value = masterLicenseService.generateRandomLicenseKey();
     });
 
     this.DOM.finalizePlan?.addEventListener('change', (e) => {
@@ -370,6 +390,14 @@ class OrvixMasterApp {
 
     // 12. Delegação de Eventos no Feed de Licenças
     this.DOM.licensesFeedContainer?.addEventListener('click', async (e) => {
+      // 0) Editar Loja / Licença
+      const editBtn = e.target.closest('.btn-edit-license');
+      if (editBtn) {
+        const key = editBtn.dataset.key;
+        this.openEditStoreModal(key);
+        return;
+      }
+
       // A) Copiar Chave
       const copyBtn = e.target.closest('.btn-copy-key');
       if (copyBtn) {
@@ -408,7 +436,7 @@ class OrvixMasterApp {
         this.DOM.newLicenseDuration.value = '30';
         this.DOM.newLicenseDevices.value = '3';
         this.DOM.newLicenseNotes.value = `Filial adicional vinculada a ${email}`;
-        this.DOM.newLicenseKey.value = masterLicenseService.generateRandomLicenseKey(store);
+        this.DOM.newLicenseKey.value = masterLicenseService.generateRandomLicenseKey();
         this.DOM.newLicenseModal.style.display = 'flex';
         this.DOM.newTenantName.focus();
         this.showToast(`Criando filial para o cliente ${email}`, 'info');
@@ -493,6 +521,30 @@ class OrvixMasterApp {
         }
         return;
       }
+    });
+
+    // 13. Eventos do Modal de Edição de Loja / Licença
+    const closeEditModal = () => {
+      if (this.DOM.editStoreModal) this.DOM.editStoreModal.style.display = 'none';
+    };
+    this.DOM.closeEditStoreModalBtn?.addEventListener('click', closeEditModal);
+    this.DOM.cancelEditStoreBtn?.addEventListener('click', closeEditModal);
+    this.DOM.editStoreModal?.addEventListener('click', (e) => {
+      if (e.target === this.DOM.editStoreModal) closeEditModal();
+    });
+
+    this.DOM.btnCopyEditKey?.addEventListener('click', () => {
+      const key = this.DOM.editLicenseKey?.value;
+      if (key) {
+        navigator.clipboard.writeText(key).then(() => {
+          this.showToast(`Chave "${key}" copiada!`, 'success');
+        });
+      }
+    });
+
+    this.DOM.editStoreForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.handleSaveEditStore();
     });
   }
 
@@ -803,8 +855,18 @@ class OrvixMasterApp {
 
           <!-- Ações do Card em 2 Linhas Limpas (ZERO OVERFLOW) -->
           <div class="card-actions-container">
-            <!-- Linha 1: WhatsApp + Nova Loja -->
+            <!-- Linha 1: Editar + WhatsApp + Nova Loja -->
             <div class="card-actions-row-primary">
+              <button 
+                type="button" 
+                class="btn-card-action btn-edit-license" 
+                data-key="${keyCode}" 
+                title="Editar dados cadastrais, e-mail e licença"
+              >
+                <i data-lucide="edit-3"></i>
+                <span>Editar</span>
+              </button>
+
               <button 
                 type="button" 
                 class="btn-card-action btn-whatsapp" 
@@ -884,10 +946,154 @@ class OrvixMasterApp {
     this.DOM.finalizeDuration.value = '30';
     this.DOM.finalizeDevices.value = '3';
     this.DOM.finalizeNotes.value = '';
-    this.DOM.finalizeKey.value = masterLicenseService.generateRandomLicenseKey('LOJA');
+    this.DOM.finalizeKey.value = masterLicenseService.generateRandomLicenseKey();
 
     this.DOM.finalizeModal.style.display = 'flex';
     this.DOM.finalizeTenantName.focus();
+  }
+
+  openEditStoreModal(key) {
+    const lic = this.licenses.find(l => (l.key === key || l.id === key || l.chaveLicenca === key));
+    if (!lic) {
+      this.showToast('Licença não encontrada nos registros.', 'error');
+      return;
+    }
+
+    const currentEmail = (lic.ownerEmail || lic.donoEmail || lic.email || '').trim().toLowerCase();
+
+    this.DOM.editLicenseKey.value = lic.key || lic.id || key;
+    this.DOM.editTenantId.value = lic.tenantId || '';
+    this.DOM.editCurrentOwnerEmail.value = currentEmail;
+    this.DOM.editLicenseStatus.value = lic.status === 'bloqueado' ? 'bloqueado' : 'ativo';
+    this.DOM.editTenantName.value = lic.tenantName || '';
+    this.DOM.editOwnerEmail.value = currentEmail;
+    this.DOM.editOwnerName.value = lic.ownerName || '';
+    this.DOM.editOwnerPhone.value = lic.ownerPhone || '';
+    this.DOM.editLicensePlan.value = lic.plan || 'Mensal Pro';
+    this.DOM.editLicenseDurationAdd.value = '0';
+    this.DOM.editLicenseDevices.value = lic.maxDevices || 3;
+    this.DOM.editLicenseNotes.value = lic.notes || '';
+
+    // Renderiza Histórico de E-mails
+    const history = Array.isArray(lic.emailHistory) ? lic.emailHistory : [];
+    if (history.length > 0) {
+      this.DOM.editEmailHistoryBlock.style.display = 'block';
+      this.DOM.editEmailHistoryList.innerHTML = history.map(item => {
+        const dateStr = item.replacedAt ? new Date(item.replacedAt).toLocaleString('pt-BR') : 'Data anterior';
+        return `
+          <div class="email-history-item">
+            <div class="email-history-item-left">
+              <span class="badge-history-tag">Histórico</span>
+              <strong>${item.email}</strong>
+            </div>
+            <span class="email-history-date">${dateStr}</span>
+          </div>
+        `;
+      }).join('');
+    } else {
+      this.DOM.editEmailHistoryBlock.style.display = 'none';
+      this.DOM.editEmailHistoryList.innerHTML = '';
+    }
+
+    this.DOM.editStoreModal.style.display = 'flex';
+    if (window.lucide) lucide.createIcons();
+    this.DOM.editTenantName.focus();
+  }
+
+  async handleSaveEditStore() {
+    const key = this.DOM.editLicenseKey.value;
+    const tenantId = this.DOM.editTenantId.value;
+    const currentEmail = this.DOM.editCurrentOwnerEmail.value.trim().toLowerCase();
+    const newEmail = this.DOM.editOwnerEmail.value.trim().toLowerCase();
+    const tenantName = this.DOM.editTenantName.value.trim();
+    const ownerName = this.DOM.editOwnerName.value.trim();
+    const ownerPhone = this.DOM.editOwnerPhone.value.trim();
+    const plan = this.DOM.editLicensePlan.value;
+    const status = this.DOM.editLicenseStatus.value;
+    const durationAdd = parseInt(this.DOM.editLicenseDurationAdd.value, 10) || 0;
+    const maxDevices = parseInt(this.DOM.editLicenseDevices.value, 10) || 3;
+    const notes = this.DOM.editLicenseNotes.value.trim();
+
+    if (!tenantName) {
+      this.showToast('Informe o nome do estabelecimento.', 'warning');
+      return;
+    }
+    if (!newEmail || !newEmail.includes('@')) {
+      this.showToast('Informe um e-mail válido.', 'warning');
+      return;
+    }
+
+    const emailChanged = currentEmail && newEmail !== currentEmail;
+
+    let confirmTitle = 'Salvar Alterações';
+    let confirmMsg = `Deseja salvar as alterações cadastrais do estabelecimento <strong>"${tenantName}"</strong>?`;
+    let confirmType = 'info';
+
+    if (emailChanged) {
+      confirmTitle = 'Atenção: Troca de E-mail';
+      confirmMsg = `Você está alterando o e-mail da loja de <strong>"${currentEmail}"</strong> para <strong>"${newEmail}"</strong>.<br><br>` +
+        `✅ <strong>O histórico de vendas continuará 100% intacto</strong>.<br>` +
+        `📁 O e-mail anterior será arquivado no histórico da loja.<br>` +
+        `👤 Apenas o novo e-mail permanecerá ativo para login.<br><br>` +
+        `Deseja confirmar a alteração?`;
+      confirmType = 'warning';
+    }
+
+    const confirmed = await confirmModal.show({
+      title: confirmTitle,
+      message: confirmMsg,
+      confirmText: 'Sim, Salvar',
+      cancelText: 'Cancelar',
+      type: confirmType,
+      icon: emailChanged ? 'user-cog' : 'check'
+    });
+
+    if (!confirmed) return;
+
+    const originalBtnHtml = this.DOM.btnSaveEditStore.innerHTML;
+    this.DOM.btnSaveEditStore.disabled = true;
+    this.DOM.btnSaveEditStore.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Salvando...';
+    if (window.lucide) lucide.createIcons();
+
+    try {
+      let newExpiresAt = null;
+      if (durationAdd > 0) {
+        const lic = this.licenses.find(l => l.key === key || l.id === key);
+        let baseDate = new Date();
+        if (lic?.expiresAt) {
+          const exp = new Date(lic.expiresAt);
+          baseDate = exp > new Date() ? exp : new Date();
+        }
+        newExpiresAt = new Date(baseDate.getTime() + durationAdd * 24 * 3600 * 1000).toISOString();
+      }
+
+      const res = await masterLicenseService.updateStoreAndLicense({
+        key,
+        tenantId,
+        tenantName,
+        newOwnerEmail: newEmail,
+        ownerName,
+        ownerPhone,
+        plan,
+        maxDevices,
+        notes,
+        status,
+        expiresAt: newExpiresAt
+      });
+
+      this.DOM.editStoreModal.style.display = 'none';
+      if (res.emailChanged) {
+        this.showToast(`E-mail atualizado para "${newEmail}". Histórico de vendas intacto!`, 'success');
+      } else {
+        this.showToast(`Dados de "${tenantName}" salvos com sucesso!`, 'success');
+      }
+    } catch (err) {
+      this.showToast(err.message, 'error');
+    } finally {
+      this.DOM.btnSaveEditStore.disabled = false;
+      this.DOM.btnSaveEditStore.innerHTML = originalBtnHtml;
+      if (window.lucide) lucide.createIcons();
+    }
   }
 
   sendWhatsAppKey({ key, phone, store }) {

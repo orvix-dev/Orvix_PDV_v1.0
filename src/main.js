@@ -20,12 +20,15 @@ import { LoginFormComponent } from './components/organisms/LoginForm.js';
 import { PendingApprovalModalComponent } from './components/organisms/PendingApprovalModal.js';
 import { StoreSelectModalComponent } from './components/organisms/StoreSelectModal.js';
 import { OnboardingModalComponent } from './components/organisms/OnboardingModal.js';
+import { SessionGateComponent } from './components/organisms/SessionGate.js';
+import { sessionService, SessionError, SESSION_ERROR } from './services/session.service.js';
 import { confirmModal } from './components/organisms/ConfirmModal.js';
 import { pinModal } from './components/organisms/PinModal.js';
 import { env } from './config/env.js';
 
 class OrvixApp {
   constructor() {
+    this.sessionGate = new SessionGateComponent();
     this.loginForm = new LoginFormComponent();
     this.pendingModal = new PendingApprovalModalComponent();
     this.storeSelectModal = new StoreSelectModalComponent();
@@ -53,6 +56,40 @@ class OrvixApp {
 
   init() {
     // 1. Inicializa componentes de autenticação e modais
+    this.sessionGate.mount();
+    this.sessionGate.onRetry = () => {
+      const user = authService.getCurrentUser();
+      if (user) {
+        this.runSessionGateValidation(user);
+      } else {
+        this.sessionGate.hide();
+        this.loginForm.show();
+      }
+    };
+    this.sessionGate.onLogout = async (auto = false, reason = '') => {
+      try {
+        await authService.logout();
+      } catch (err) {
+        console.warn('[Orvix PDV] Erro ao deslogar:', err);
+      } finally {
+        this.hideApp();
+        this.sessionGate.hide();
+        this.loginForm.show();
+        if (reason && auto) {
+          this.showToast(`Sessão encerrada por inatividade: ${reason}`, 'info');
+        }
+      }
+    };
+    this.sessionGate.onNewKey = () => {
+      this.sessionGate.hide();
+      const user = authService.getCurrentUser();
+      if (user) {
+        this.pendingModal.showPending(user);
+      } else {
+        this.loginForm.show();
+      }
+    };
+
     this.loginForm.mount();
     this.pendingModal.mount();
     this.storeSelectModal.mount();
@@ -2919,23 +2956,25 @@ class OrvixApp {
     }
   }
 
-  initLicenseWatcher() {
-    const tenant = licenseService.getLocalTenant();
+  initLicenseWatcher(tenantOverride) {
+    const tenant = tenantOverride || licenseService.getLocalTenant();
     if (tenant && tenant.chaveLicenca) {
-      licenseService.subscribeLicenseStatus(tenant.chaveLicenca, (licData) => {
+      if (this.state.tenantUnsubscribe) {
+        this.state.tenantUnsubscribe();
+        this.state.tenantUnsubscribe = null;
+      }
+      this.state.tenantUnsubscribe = licenseService.subscribeLicenseStatus(tenant.chaveLicenca, (licData) => {
         if (!licData) return;
-        const now = new Date();
-        const isExp = licData.expiresAt && new Date(licData.expiresAt) < now;
-        if (licData.status === 'bloqueado') {
+        const verdict = sessionService.evaluate(tenant, licData);
+        if (!verdict.ok) {
           this.hideApp();
-          if (this.pendingModal) {
-            this.pendingModal.showSuspended('Licença Bloqueada pelo Administrador Master', 'O acesso deste estabelecimento foi temporariamente suspenso.');
-          }
-        } else if (isExp) {
-          this.hideApp();
-          if (this.pendingModal) {
-            this.pendingModal.showSuspended('Licença Expirada', 'A assinatura deste estabelecimento chegou ao fim.');
-          }
+          const err = new SessionError(verdict.code, '', {
+            tenant,
+            license: licData,
+            key: verdict.key,
+            expiresAt: verdict.expiresAt
+          });
+          this.sessionGate?.showError(err, { user: authService.getCurrentUser(), tenant });
         }
       });
     }
@@ -3311,25 +3350,27 @@ class OrvixApp {
 
             <div class="employee-card-actions">
               ${isAtivo ? `
-                <button type="button" class="btn-card-action btn-assume-shift" data-action="assume" data-id="${emp.id}" title="Autenticar com PIN para assumir vendas">
-                  <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+                <button type="button" class="btn-card-action btn-assume-shift ${isCurrentActive ? 'is-current-operator' : ''}" data-action="assume" data-id="${emp.id}" title="${isCurrentActive ? 'Operador atualmente ativo no caixa' : 'Autenticar com PIN para assumir vendas'}">
+                  <i data-lucide="${isCurrentActive ? 'check' : 'user-check'}" style="width: 14px; height: 14px;"></i>
                   <span>${isCurrentActive ? 'Em Operação' : 'Assumir Caixa'}</span>
                 </button>
               ` : ''}
               
-              <button type="button" class="btn-card-action btn-edit-employee" data-action="edit" data-id="${emp.id}" title="Editar dados">
-                <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
-                <span>Editar</span>
-              </button>
+              <div class="employee-card-actions-sub">
+                <button type="button" class="btn-card-action btn-edit-employee" data-action="edit" data-id="${emp.id}" title="Editar dados">
+                  <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+                  <span>Editar</span>
+                </button>
 
-              <button type="button" class="btn-card-action btn-toggle-employee-status" data-action="toggle" data-id="${emp.id}" title="${isAtivo ? 'Inativar acesso' : 'Reativar acesso'}">
-                <i data-lucide="${isAtivo ? 'shield-off' : 'shield-check'}" style="width: 14px; height: 14px;"></i>
-                <span>${isAtivo ? 'Inativar' : 'Ativar'}</span>
-              </button>
+                <button type="button" class="btn-card-action btn-toggle-employee-status" data-action="toggle" data-id="${emp.id}" title="${isAtivo ? 'Inativar acesso' : 'Reativar acesso'}">
+                  <i data-lucide="${isAtivo ? 'shield-off' : 'shield-check'}" style="width: 14px; height: 14px;"></i>
+                  <span>${isAtivo ? 'Inativar' : 'Ativar'}</span>
+                </button>
 
-              <button type="button" class="btn-card-action btn-delete-employee" data-action="delete" data-id="${emp.id}" title="Excluir funcionário" style="color: var(--danger);">
-                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
-              </button>
+                <button type="button" class="btn-card-action btn-delete-employee" data-action="delete" data-id="${emp.id}" title="Excluir funcionário" style="color: var(--danger);">
+                  <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -3818,107 +3859,134 @@ class OrvixApp {
 
     authService.onAuthStateChanged(async (user) => {
       if (!user) {
+        this.sessionGate?.hide();
         this.hideApp();
         return;
       }
 
       // Verificação Imediata de Status do Usuário
       if (user.status === 'pendente') {
+        this.sessionGate?.hide();
         this.hideApp();
         this.pendingModal.showPending(user);
         return;
       }
 
       if (user.status === 'bloqueado') {
+        this.sessionGate?.hide();
         this.hideApp();
         this.pendingModal.showBlocked(user);
         return;
       }
 
-      try {
-        const tenants = await licenseService.getUserTenants(user);
-
-        if (!tenants || tenants.length === 0) {
-          // Usuário sem nenhum estabelecimento ativo
-          this.hideApp();
-          this.pendingModal.showPending(user);
-          return;
-        }
-
-        if (tenants.length === 1) {
-          const tenant = tenants[0];
-          licenseService.saveLocalTenant(tenant);
-          cashService.setTenantId(tenant.id);
-          this.updateTenantHeader(tenant);
-
-          // Verifica se a licença está bloqueada ou expirada
-          if (tenant.statusLicenca === 'bloqueado' || tenant.status === 'bloqueado') {
-            this.hideApp();
-            this.pendingModal.showSuspended('Licença Bloqueada pelo Administrador Master', 'O acesso deste estabelecimento foi temporariamente suspenso.');
-            return;
-          }
-
-          if (tenant.dataExpiracao && new Date(tenant.dataExpiracao) < new Date()) {
-            this.hideApp();
-            this.pendingModal.showSuspended('Licença Expirada', 'A assinatura deste estabelecimento chegou ao fim.');
-            return;
-          }
-
-          // Acesso 100% autorizado: libera a aplicação
-          this.showApp();
-
-          if (tenant.onboardingCompleted === false) {
-            this.onboardingModal.show(tenant, () => {
-              this.updateTenantHeader(licenseService.getLocalTenant() || tenant);
-              this.renderAll();
-            });
-          }
-        } else {
-          // Usuário com múltiplas lojas sob o mesmo e-mail
-          this.storeSelectModal.show(
-            user,
-            tenants,
-            (chosenTenant) => {
-              licenseService.saveLocalTenant(chosenTenant);
-              cashService.setTenantId(chosenTenant.id);
-              this.updateTenantHeader(chosenTenant);
-
-              if (chosenTenant.statusLicenca === 'bloqueado' || chosenTenant.status === 'bloqueado') {
-                this.hideApp();
-                this.pendingModal.showSuspended('Licença Bloqueada pelo Administrador Master', 'O acesso deste estabelecimento foi temporariamente suspenso.');
-                return;
-              }
-
-              this.showApp();
-
-              if (chosenTenant.onboardingCompleted === false) {
-                this.onboardingModal.show(chosenTenant, () => {
-                  this.updateTenantHeader(licenseService.getLocalTenant() || chosenTenant);
-                  this.renderAll();
-                });
-              } else {
-                this.renderAll();
-              }
-            },
-            () => {
-              // Adicionar nova loja
-              this.hideApp();
-              this.pendingModal.show();
-            }
-          );
-        }
-      } catch (err) {
-        console.warn('[Orvix PDV] Erro na verificação de lojas do usuário:', err);
-        const localTenant = licenseService.getLocalTenant();
-        if (localTenant && user.status === 'ativo') {
-          this.showApp();
-        } else {
-          this.hideApp();
-          this.pendingModal.showPending(user);
-        }
-      }
+      // Dispara o fluxo da tela de carregamento e validação da chave da sessão
+      await this.runSessionGateValidation(user);
     });
   }
+
+  /**
+   * Executa a esteira de carregamento da sessão:
+   *  1. Valida conta / auth
+   *  2. Busca estabelecimentos
+   *  3. Valida chave da sessão no servidor
+   *  4. Inicia PDV com transição suave
+   * Qualquer lentidão ou erro por chave expirada/inválida ativa a tela de erro
+   * com opções de logoff, suporte, recarregar, teste de internet e retorno automático.
+   */
+  async runSessionGateValidation(user) {
+    if (!user) return;
+    this.hideApp();
+    this.loginForm.hide();
+    this.sessionGate.showLoading({ subtitle: 'Verificando chave de acesso e dados da sessão…' });
+
+    const deadline = sessionService.createDeadline(env.session.timeoutMs);
+    let verifiedUser = user;
+
+    try {
+      // Etapa 1: Garantir que a autenticação está consolidada
+      this.sessionGate.setStep('auth', 'active');
+      verifiedUser = await sessionService.ensureAuth(deadline);
+      this.sessionGate.setStep('auth', 'done');
+
+      // Etapa 2: Buscar estabelecimentos vinculados no servidor
+      this.sessionGate.setStep('tenants', 'active');
+      const tenants = await sessionService.fetchTenants(verifiedUser, deadline);
+      this.sessionGate.setStep('tenants', 'done');
+
+      if (!tenants || tenants.length === 0) {
+        this.sessionGate.hide();
+        this.pendingModal.showPending(verifiedUser);
+        return;
+      }
+
+      if (tenants.length === 1) {
+        await this.validateAndActivateTenant(tenants[0], verifiedUser, deadline);
+      } else {
+        // Multi-lojas: fecha o loading provisoriamente e exibe seletor de lojas
+        this.sessionGate.hide();
+        this.storeSelectModal.show(
+          verifiedUser,
+          tenants,
+          async (chosenTenant) => {
+            const storeDeadline = sessionService.createDeadline(env.session.timeoutMs);
+            await this.validateAndActivateTenant(chosenTenant, verifiedUser, storeDeadline);
+          },
+          () => {
+            this.pendingModal.show();
+          }
+        );
+      }
+    } catch (err) {
+      const sessionErr = sessionService.normalizeError(err);
+      console.warn('[Orvix PDV] Erro na validação de sessão:', sessionErr);
+      this.hideApp();
+      this.sessionGate.showError(sessionErr, { user: verifiedUser || user });
+    }
+  }
+
+  /**
+   * Valida a chave de licença do estabelecimento escolhido e libera o PDV
+   */
+  async validateAndActivateTenant(tenant, user, deadline) {
+    try {
+      this.sessionGate.showLoading({
+        completed: ['auth', 'tenants'],
+        subtitle: `Validando licença de ${tenant?.nome || 'estabelecimento'}…`
+      });
+
+      // Etapa 3: Validar a chave de licença no banco de dados
+      this.sessionGate.setStep('license', 'active');
+      const { tenant: verifiedTenant } = await sessionService.validateTenantLicense(tenant, deadline);
+      this.sessionGate.setStep('license', 'done');
+
+      // Etapa 4: Abrindo o PDV
+      this.sessionGate.setStep('ready', 'active');
+      const activeTenant = verifiedTenant || tenant;
+      licenseService.saveLocalTenant(activeTenant);
+      cashService.setTenantId(activeTenant.id);
+      this.updateTenantHeader(activeTenant);
+      this.initLicenseWatcher(activeTenant);
+
+      this.showApp();
+      this.sessionGate.setStep('ready', 'done');
+      await this.sessionGate.complete();
+
+      if (activeTenant.onboardingCompleted === false) {
+        this.onboardingModal.show(activeTenant, () => {
+          this.updateTenantHeader(licenseService.getLocalTenant() || activeTenant);
+          this.renderAll();
+        });
+      } else {
+        this.renderAll();
+      }
+    } catch (err) {
+      const sessionErr = sessionService.normalizeError(err);
+      console.warn('[Orvix PDV] Erro na validação de licença do estabelecimento:', sessionErr);
+      this.hideApp();
+      this.sessionGate.showError(sessionErr, { user, tenant });
+    }
+  }
+
 
   updateTenantHeader(tenant) {
     if (this.DOM.pageBreadcrumb && tenant) {

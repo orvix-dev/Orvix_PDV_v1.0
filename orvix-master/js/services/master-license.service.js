@@ -460,18 +460,163 @@ export class MasterLicenseService {
   }
 
   /**
-   * Utilitário para gerar chave legível
+   * Atualiza os dados cadastrais do estabelecimento e sua licença.
+   * Suporta alteração do e-mail do proprietário preservando 100% o histórico de vendas
+   * (pois todas as vendas, caixas e pedidos são indexados pelo tenantId imutável).
+   * Registra o e-mail anterior no histórico de e-mails mantendo APENAS UM e-mail ativo.
    */
-  generateRandomLicenseKey(tenantName = '') {
-    let prefix = 'LOJA';
-    if (tenantName) {
-      const clean = tenantName.toUpperCase().replace(/[^A-Z]/g, '');
-      if (clean.length >= 3) {
-        prefix = clean.substring(0, 5);
+  async updateStoreAndLicense({
+    key,
+    tenantId,
+    tenantName,
+    newOwnerEmail,
+    ownerName = '',
+    ownerPhone = '',
+    plan = 'Mensal Pro',
+    maxDevices = 3,
+    notes = '',
+    status = 'ativo',
+    expiresAt = null
+  }) {
+    if (!key) throw new Error('Chave de licença não informada.');
+    if (!tenantName || !tenantName.trim()) throw new Error('Informe o nome do estabelecimento.');
+    if (!newOwnerEmail || !newOwnerEmail.includes('@')) throw new Error('Informe um e-mail válido para o estabelecimento.');
+
+    if (!firebaseDb) {
+      throw new Error('Erro de conexão com o banco de dados. Firebase não está inicializado.');
+    }
+
+    const cleanKey = key.trim().toUpperCase();
+    const cleanTenantName = tenantName.trim();
+    const cleanNewEmail = newOwnerEmail.trim().toLowerCase();
+    const nowIso = new Date().toISOString();
+
+    const licenseRef = doc(firebaseDb, 'licenses', cleanKey);
+    const licSnap = await getDoc(licenseRef);
+    if (!licSnap.exists()) {
+      throw new Error(`Licença "${cleanKey}" não encontrada no banco de dados.`);
+    }
+
+    const currentLicData = licSnap.data() || {};
+    const effectiveTenantId = tenantId || currentLicData.tenantId;
+    const currentEmail = (currentLicData.ownerEmail || currentLicData.donoEmail || '').trim().toLowerCase();
+
+    // Histórico de e-mails existente
+    let emailHistory = Array.isArray(currentLicData.emailHistory) ? [...currentLicData.emailHistory] : [];
+    let emailsVinculados = Array.isArray(currentLicData.emailsVinculados) ? [...currentLicData.emailsVinculados] : [];
+
+    // Se o e-mail mudou, arquiva o anterior no histórico
+    const emailChanged = currentEmail && cleanNewEmail !== currentEmail;
+    if (emailChanged) {
+      // Registra a transição no histórico garantindo que apenas 1 ativo permanece
+      emailHistory.unshift({
+        email: currentEmail,
+        replacedAt: nowIso,
+        replacedBy: env.masterAdminEmail || 'master_admin',
+        reason: 'Alteração cadastral de e-mail via Painel Master'
+      });
+
+      if (!emailsVinculados.includes(currentEmail)) {
+        emailsVinculados.push(currentEmail);
       }
     }
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    return `ORVIX-${prefix}-${rand}`;
+
+    if (!emailsVinculados.includes(cleanNewEmail)) {
+      emailsVinculados.unshift(cleanNewEmail);
+    }
+
+    // 1. Atualiza documento 'licenses/{key}'
+    const licenseUpdates = {
+      tenantName: cleanTenantName,
+      ownerEmail: cleanNewEmail,
+      donoEmail: cleanNewEmail,
+      ownerName: ownerName.trim(),
+      ownerPhone: ownerPhone.trim(),
+      plan: plan,
+      maxDevices: parseInt(maxDevices, 10) || 3,
+      notes: notes.trim(),
+      status: status,
+      emailHistory: emailHistory,
+      emailsVinculados: emailsVinculados,
+      updatedAt: serverTimestamp()
+    };
+    if (expiresAt) {
+      licenseUpdates.expiresAt = expiresAt;
+    }
+
+    await updateDoc(licenseRef, licenseUpdates);
+
+    // 2. Atualiza documento 'tenants/{tenantId}' mantendo o tenantId idêntico para preservar vendas
+    if (effectiveTenantId) {
+      const tenantRef = doc(firebaseDb, 'tenants', effectiveTenantId);
+      const tenantSnap = await getDoc(tenantRef);
+      if (tenantSnap.exists()) {
+        const tenantUpdates = {
+          nome: cleanTenantName,
+          donoEmail: cleanNewEmail,
+          ownerEmail: cleanNewEmail,
+          ownerName: ownerName.trim(),
+          ownerPhone: ownerPhone.trim(),
+          plan: plan,
+          statusLicenca: status,
+          emailHistory: emailHistory,
+          emailsVinculados: emailsVinculados,
+          updatedAt: serverTimestamp()
+        };
+        if (expiresAt) {
+          tenantUpdates.dataExpiracao = expiresAt;
+        }
+        await updateDoc(tenantRef, tenantUpdates);
+      }
+    }
+
+    // 3. Se o e-mail foi alterado, busca se já existe um cadastro de usuário com o novo e-mail
+    // para ativá-lo imediatamente e vinculá-lo à loja com todas as permissões
+    if (emailChanged) {
+      try {
+        const usersQuery = query(collection(firebaseDb, 'users'), where('email', '==', cleanNewEmail));
+        const userSnaps = await getDocs(usersQuery);
+        userSnaps.forEach(async (uDoc) => {
+          await updateDoc(doc(firebaseDb, 'users', uDoc.id), {
+            tenantId: effectiveTenantId,
+            tenantName: cleanTenantName,
+            chaveLicenca: cleanKey,
+            status: 'ativo',
+            role: 'Administrador',
+            approvedAt: nowIso,
+            updatedAt: serverTimestamp()
+          }).catch(() => {});
+        });
+      } catch (err) {
+        console.warn('[MasterLicense] Erro ao sincronizar novo usuário:', err);
+      }
+    }
+
+    return {
+      success: true,
+      key: cleanKey,
+      tenantId: effectiveTenantId,
+      newEmail: cleanNewEmail,
+      emailChanged,
+      emailHistory
+    };
+  }
+
+  /**
+   * Utilitário para gerar chave de ativação segura e profissional
+   * Padrão SaaS: ORVIX-XXXX-YYYY (ex: ORVIX-7K9M-4821)
+   * Caracteres seguros alfanuméricos sem termos genéricos ou previsíveis
+   */
+  generateRandomLicenseKey() {
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const pick = (len) => {
+      let res = '';
+      for (let i = 0; i < len; i++) {
+        res += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return res;
+    };
+    return `ORVIX-${pick(4)}-${pick(4)}`;
   }
 
   /**
