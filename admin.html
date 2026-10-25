@@ -1,21 +1,25 @@
 <!DOCTYPE html>
 <html lang="pt-BR" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Orvix - Gestor Master de Licenças</title>
   <link rel="icon" href="image/acai.png" type="image/png">
-  
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet">
+
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  
+
   <link rel="stylesheet" href="/src/admin/admin.css">
 </head>
+
 <body>
 
   <!-- ========================================================
@@ -38,7 +42,8 @@
       <form id="master-pin-form" class="auth-section active">
         <div class="form-group">
           <label for="master-pin-input">PIN Master de Segurança</label>
-          <input type="password" id="master-pin-input" class="admin-input" placeholder="Digite seu PIN (padrão: 101520)" inputmode="numeric" autofocus autocomplete="current-password">
+          <input type="password" id="master-pin-input" class="admin-input" placeholder="Digite seu PIN (padrão: 101520)"
+            inputmode="numeric" autofocus autocomplete="current-password">
         </div>
         <button type="submit" class="btn btn-primary btn-block" id="btn-submit-pin">
           <i data-lucide="key-round"></i>
@@ -55,7 +60,7 @@
         <div class="auth-divider"><span>ou com e-mail master</span></div>
         <form id="master-email-form">
           <div class="form-group">
-            <input type="email" id="master-email-input" class="admin-input" placeholder="admin@orvix.com">
+            <input type="email" id="master-email-input" class="admin-input" placeholder="email@email.com">
           </div>
           <div class="form-group">
             <input type="password" id="master-password-input" class="admin-input" placeholder="Sua senha">
@@ -77,7 +82,7 @@
        APLICAÇÃO PRINCIPAL (EXIBIDA APÓS LOGIN MASTER)
        ======================================================== -->
   <div class="master-app-layout" id="master-app-layout" style="display: none;">
-    
+
     <!-- Topbar Mobile-First -->
     <header class="master-header">
       <div class="header-container">
@@ -120,12 +125,15 @@
         </div>
 
         <!-- Banner Nova Aplicação Secundária Orvix Master -->
-        <div style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(79, 70, 229, 0.15)); border: 1px solid rgba(124, 58, 237, 0.35); border-radius: var(--radius-md); padding: 0.85rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <div
+          style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(79, 70, 229, 0.15)); border: 1px solid rgba(124, 58, 237, 0.35); border-radius: var(--radius-md); padding: 0.85rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 0.75rem;">
             <i data-lucide="sparkles" style="color: #c084fc; width: 22px; height: 22px;"></i>
-            <span style="font-size: 0.85rem; color: #f8fafc;">Nova Aplicação Secundária: <strong>Orvix Master</strong> com Login Único e Fila de Ativação!</span>
+            <span style="font-size: 0.85rem; color: #f8fafc;">Nova Aplicação Secundária: <strong>Orvix Master</strong>
+              com Login Único e Fila de Ativação!</span>
           </div>
-          <a href="http://localhost:3001" target="_blank" class="btn btn-primary btn-sm" style="height: 34px; font-size: 0.8rem; text-decoration: none;">
+          <a href="http://localhost:3001" target="_blank" class="btn btn-primary btn-sm"
+            style="height: 34px; font-size: 0.8rem; text-decoration: none;">
             <span>Abrir Orvix Master (Porta 3001)</span>
             <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
           </a>
@@ -178,7 +186,8 @@
         <div class="filter-toolbar">
           <div class="search-input-wrapper">
             <i data-lucide="search" class="search-icon"></i>
-            <input type="search" id="license-search-input" class="search-input" placeholder="Buscar por cliente, loja ou chave..." autocomplete="off">
+            <input type="search" id="license-search-input" class="search-input"
+              placeholder="Buscar por cliente, loja ou chave..." autocomplete="off">
           </div>
 
           <div class="filter-pills" id="filter-pills-container">
@@ -223,7 +232,8 @@
         <div class="modal-body">
           <div class="form-group">
             <label for="new-tenant-name">Nome do Estabelecimento / Loja *</label>
-            <input type="text" id="new-tenant-name" class="admin-input" placeholder="Ex: Açaí da Serra - Filial 2" required>
+            <input type="text" id="new-tenant-name" class="admin-input" placeholder="Ex: Açaí da Serra - Filial 2"
+              required>
           </div>
 
           <div class="form-row-2">
@@ -259,7 +269,8 @@
             <label for="new-license-key">Código da Chave (Opcional - deixe em branco para gerar automático)</label>
             <div class="input-with-action">
               <input type="text" id="new-license-key" class="admin-input mono" placeholder="ORVIX-LOJA-XXXX">
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-generate-key-preview" title="Gerar código aleatório">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-generate-key-preview"
+                title="Gerar código aleatório">
                 <i data-lucide="sparkles"></i>
                 <span>Gerar</span>
               </button>
@@ -279,7 +290,8 @@
 
           <div class="form-group">
             <label for="new-license-notes">Observações Internas (Opcional)</label>
-            <input type="text" id="new-license-notes" class="admin-input" placeholder="Ex: Pago no Pix, contato pelo Instagram...">
+            <input type="text" id="new-license-notes" class="admin-input"
+              placeholder="Ex: Pago no Pix, contato pelo Instagram...">
           </div>
         </div>
 

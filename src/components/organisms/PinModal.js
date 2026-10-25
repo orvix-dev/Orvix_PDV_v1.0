@@ -191,7 +191,7 @@ export class PinModalComponent {
     const operatorBox = this.modalEl.querySelector('#pin-target-operator');
 
     if (titleEl) titleEl.innerText = this.options.title;
-    if (descEl) descEl.innerText = this.options.desc;
+    if (descEl) descEl.innerHTML = this.options.desc;
 
     // Se tiver operador selecionado, exibe banner
     if (this.options.employee) {

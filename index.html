@@ -123,10 +123,125 @@
                 </div>
 
                 <div class="header-right">
-                    <!-- Status do Caixa Badge -->
-                    <div class="header-caixa-badge" id="header-caixa-badge" title="Clique para gerenciar o caixa">
-                        <span class="status-indicator-dot" id="header-caixa-dot"></span>
-                        <span class="status-indicator-text" id="header-caixa-text">Caixa: Fechado</span>
+                    <!-- Status do Caixa Badge com Dropdown de Troca Rápida -->
+                    <div class="header-caixa-wrapper" id="header-caixa-wrapper">
+                        <div class="header-caixa-badge" id="header-caixa-badge" title="Passe o mouse ou toque para troca rápida e consulta financeira" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
+                            <span class="status-indicator-dot" id="header-caixa-dot"></span>
+                            <span class="status-indicator-text" id="header-caixa-text">Caixa: Fechado</span>
+                            <i data-lucide="chevron-down" class="header-caixa-chevron" id="header-caixa-chevron"></i>
+                        </div>
+
+                        <!-- Menu Flutuante Compacto de Troca Rápida de Caixas -->
+                        <div class="quick-caixa-dropdown" id="quick-caixa-dropdown" style="display: none;" role="menu" aria-label="Troca Rápida de Caixas">
+                            <div class="quick-caixa-header">
+                                <div class="quick-caixa-status-row">
+                                    <span class="quick-caixa-status-pill" id="qc-status-pill">
+                                        <span class="status-dot-mini" id="qc-status-dot"></span>
+                                        <span id="qc-status-label">Caixa Fechado</span>
+                                    </span>
+                                    <button type="button" class="quick-caixa-link-btn" id="qc-btn-open-full-caixa" title="Abrir página completa do caixa">
+                                        <span>Gerenciar</span>
+                                        <i data-lucide="arrow-up-right"></i>
+                                    </button>
+                                </div>
+                                <div class="quick-caixa-operator-card" id="qc-operator-card">
+                                    <div class="qc-operator-avatar" id="qc-operator-avatar">OP</div>
+                                    <div class="qc-operator-info">
+                                        <div class="qc-operator-name-row">
+                                            <strong class="qc-operator-name" id="qc-operator-name">Operador</strong>
+                                            <span class="qc-session-tag" id="qc-session-tag">#001</span>
+                                        </div>
+                                        <div class="qc-operator-sub" id="qc-operator-sub">Turno iniciado às --:--</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabs de Visualização Financeira: Caixa Ativo vs Geral do Dia -->
+                            <div class="quick-caixa-view-tabs">
+                                <button type="button" class="qc-view-tab-btn active" id="qc-tab-active-session" data-qc-view="active">
+                                    <i data-lucide="circle-dot"></i>
+                                    <span>Caixa Ativo</span>
+                                </button>
+                                <button type="button" class="qc-view-tab-btn" id="qc-tab-daily-general" data-qc-view="daily">
+                                    <i data-lucide="calendar"></i>
+                                    <span>Caixa Geral do Dia</span>
+                                </button>
+                            </div>
+
+                            <!-- Painel 1: Caixa Ativo no Momento -->
+                            <div class="quick-caixa-financial-panel" id="qc-panel-active">
+                                <div class="qc-main-metric-box">
+                                    <span class="qc-metric-title">Saldo Atual em Gaveta (Sessão)</span>
+                                    <strong class="qc-metric-amount" id="qc-active-balance">R$ 0,00</strong>
+                                    <span class="qc-metric-sub">Fundo + Dinheiro − Despesas</span>
+                                </div>
+                                <div class="qc-metrics-mini-grid">
+                                    <div class="qc-mini-metric">
+                                        <span class="qc-mini-label">Fundo Inicial</span>
+                                        <strong class="qc-mini-val" id="qc-active-opening">R$ 0,00</strong>
+                                    </div>
+                                    <div class="qc-mini-metric">
+                                        <span class="qc-mini-label">Vendas na Sessão</span>
+                                        <strong class="qc-mini-val success" id="qc-active-sales">R$ 0,00</strong>
+                                    </div>
+                                    <div class="qc-mini-metric">
+                                        <span class="qc-mini-label">Em Dinheiro</span>
+                                        <strong class="qc-mini-val" id="qc-active-cash">R$ 0,00</strong>
+                                    </div>
+                                    <div class="qc-mini-metric">
+                                        <span class="qc-mini-label">Cartão & Pix</span>
+                                        <strong class="qc-mini-val info" id="qc-active-elec">R$ 0,00</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Painel 2: Caixa Geral do Dia (Consolidado) -->
+                            <div class="quick-caixa-financial-panel" id="qc-panel-daily" style="display: none;">
+                                <div class="qc-main-metric-box consolidated">
+                                    <span class="qc-metric-title">Total Faturado no Dia (Consolidado)</span>
+                                    <strong class="qc-metric-amount success" id="qc-daily-revenue">R$ 0,00</strong>
+                                    <span class="qc-metric-sub">Todas as vendas e operadores hoje</span>
+                                </div>
+                                <div class="qc-metrics-mini-grid">
+                                    <div class="qc-mini-metric">
+                                        <span class="qc-mini-label">💵 Dinheiro</span>
+                                        <strong class="qc-mini-val" id="qc-daily-cash">R$ 0,00</strong>
+                                    </div>
+                                    <div class="qc-mini-metric">
+                                        <span class="qc-mini-label">💳 Cartão</span>
+                                        <strong class="qc-mini-val" id="qc-daily-card">R$ 0,00</strong>
+                                    </div>
+                                    <div class="qc-mini-metric">
+                                        <span class="qc-mini-label">📱 Pix</span>
+                                        <strong class="qc-mini-val" id="qc-daily-pix">R$ 0,00</strong>
+                                    </div>
+                                    <div class="qc-mini-metric">
+                                        <span class="qc-mini-label">🔻 Despesas</span>
+                                        <strong class="qc-mini-val danger" id="qc-daily-expenses">R$ 0,00</strong>
+                                    </div>
+                                </div>
+                                <div class="qc-daily-summary-row">
+                                    <span>Saldo gaveta consolidado:</span>
+                                    <strong id="qc-daily-drawer-total">R$ 0,00</strong>
+                                </div>
+                            </div>
+
+                            <!-- Seção de Troca de Operadores -->
+                            <div class="quick-caixa-operators-section">
+                                <div class="qc-section-title-row">
+                                    <span class="qc-section-title">
+                                        <i data-lucide="users"></i>
+                                        <span>Troca Rápida de Operador</span>
+                                    </span>
+                                    <span class="qc-section-badge" id="qc-operators-count">0 disponíveis</span>
+                                </div>
+                                <p class="qc-section-hint">Alterne quem atende sem encerrar a sessão financeira:</p>
+                                
+                                <div class="quick-caixa-operators-list" id="quick-caixa-operators-list">
+                                    <!-- Renderizado via JavaScript -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Relógio e Data -->
@@ -416,181 +531,227 @@
 
                 <!-- ================= TAB: CAIXA ================= -->
                 <div class="tab-content" id="caixa-tab">
-                    <div class="view-container-narrow">
-                        <!-- ESTADO 1: ABERTURA DE CAIXA -->
-                        <div id="cash-register-opening" class="surface-card cash-opening-card" style="display: none;">
-                            <div class="card-header-styled">
-                                <div class="header-icon-circle primary"><i data-lucide="vault"></i></div>
-                                <div>
-                                    <h2 class="view-heading">Abertura de Caixa</h2>
-                                    <p class="view-subheading">Informe os valores em cédulas e moedas disponíveis na
-                                        gaveta para iniciar o expediente.</p>
-                                </div>
-                            </div>
+                    <div class="view-container-cash">
 
-                            <!-- Seleção do Funcionário Responsável -->
-                            <div class="form-group-styled" style="margin-bottom: 1.25rem;">
-                                <label for="opening-employee-select">
-                                    <span class="label-icon"><i data-lucide="user-check"></i></span>
-                                    <span>Operador do Turno (Autenticação por PIN) *</span>
-                                </label>
-                                <select id="opening-employee-select" class="admin-input-styled" style="cursor: pointer; font-weight: 600;">
-                                    <!-- Preenchido dinamicamente via JS com colaboradores -->
-                                </select>
-                                <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">
-                                    O PIN de segurança do funcionário será solicitado para autorizar a abertura deste turno.
-                                </small>
-                            </div>
+                        <!-- GRID RESPONSIVO DO CAIXA: PROPORCIONAL AO VIEWPORT -->
+                        <div class="cash-layout-responsive" id="cash-layout-responsive">
 
-                            <div class="opening-inputs-grid">
-                                <div class="form-group-styled">
-                                    <label for="opening-bills">
-                                        <span class="label-icon"><i data-lucide="banknote"></i></span>
-                                        <span>Total em Cédulas (R$)</span>
-                                    </label>
-                                    <input type="number" id="opening-bills" class="admin-input-styled"
-                                        placeholder="0.00" step="0.01" inputmode="decimal">
-                                </div>
-
-                                <div class="form-group-styled">
-                                    <label for="opening-coins">
-                                        <span class="label-icon"><i data-lucide="coins"></i></span>
-                                        <span>Total em Moedas (R$)</span>
-                                    </label>
-                                    <input type="number" id="opening-coins" class="admin-input-styled"
-                                        placeholder="0.00" step="0.01" inputmode="decimal">
-                                </div>
-                            </div>
-
-                            <div class="opening-total-banner">
-                                <span>Fundo Inicial Total:</span>
-                                <strong id="opening-total-display">R$ 0,00</strong>
-                            </div>
-
-                            <button id="btn-open-register" class="touch-btn btn-success btn-block-lg" type="button">
-                                <i data-lucide="key-round"></i>
-                                <span>Confirmar Abertura com PIN</span>
-                            </button>
-                        </div>
-
-                        <!-- ESTADO 2: DASHBOARD DE CAIXA ABERTO -->
-                        <div id="cash-register-dashboard" class="surface-card cash-dashboard-card"
-                            style="display: none;">
-                            <div class="dashboard-topbar">
-                                <div>
-                                    <h2 class="view-heading">Controle de Caixa</h2>
-                                    <p class="view-subheading">Resumo das movimentações e saldo em gaveta do dia.</p>
-                                </div>
-                                <span class="status-badge-styled open">
-                                    <span class="status-dot-mini"></span>
-                                    <span>CAIXA ABERTO</span>
-                                </span>
-                            </div>
-
-                            <!-- Banner do Operador do Turno Ativo -->
-                            <div class="cash-shift-operator-banner" id="cash-shift-operator-banner" style="background: rgba(124, 58, 237, 0.12); border: 1px solid rgba(124, 58, 237, 0.25); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <div id="cash-shift-avatar" style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #7c3aed, #ec4899); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">OP</div>
-                                    <div>
-                                        <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-                                            <span id="cash-shift-employee-name">Operador</span>
-                                            <span style="font-size: 0.72rem; background: rgba(124, 58, 237, 0.2); color: #c4b5fd; padding: 2px 8px; border-radius: 6px; font-weight: 600;" id="cash-shift-code-tag">Turno #001</span>
+                            <!-- COLUNA PRINCIPAL: CONTROLE, MÉTRICAS E AÇÕES -->
+                            <div class="cash-col-primary">
+                                
+                                <!-- ESTADO 1: ABERTURA DE CAIXA (quando fechado) -->
+                                <div id="cash-register-opening" class="surface-card cash-opening-card" style="display: none;">
+                                    <div class="card-header-styled">
+                                        <div class="header-icon-circle primary"><i data-lucide="vault"></i></div>
+                                        <div>
+                                            <h2 class="view-heading">Abertura de Caixa</h2>
+                                            <p class="view-subheading">Informe os valores em cédulas e moedas disponíveis na gaveta para iniciar o expediente.</p>
                                         </div>
-                                        <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;" id="cash-shift-opened-time">Iniciado às --:--</div>
+                                    </div>
+
+                                    <!-- Seleção do Funcionário Responsável -->
+                                    <div class="form-group-styled" style="margin-bottom: 1.25rem;">
+                                        <label for="opening-employee-select">
+                                            <span class="label-icon"><i data-lucide="user-check"></i></span>
+                                            <span>Operador do Turno (Autenticação por PIN) *</span>
+                                        </label>
+                                        <select id="opening-employee-select" class="admin-input-styled" style="cursor: pointer; font-weight: 600;">
+                                            <!-- Preenchido dinamicamente via JS com colaboradores -->
+                                        </select>
+                                        <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">
+                                            O PIN de segurança do funcionário será solicitado para autorizar a abertura deste turno.
+                                        </small>
+                                    </div>
+
+                                    <div class="opening-inputs-grid">
+                                        <div class="form-group-styled">
+                                            <label for="opening-bills">
+                                                <span class="label-icon"><i data-lucide="banknote"></i></span>
+                                                <span>Total em Cédulas (R$)</span>
+                                            </label>
+                                            <input type="number" id="opening-bills" class="admin-input-styled"
+                                                placeholder="0.00" step="0.01" inputmode="decimal">
+                                        </div>
+
+                                        <div class="form-group-styled">
+                                            <label for="opening-coins">
+                                                <span class="label-icon"><i data-lucide="coins"></i></span>
+                                                <span>Total em Moedas (R$)</span>
+                                            </label>
+                                            <input type="number" id="opening-coins" class="admin-input-styled"
+                                                placeholder="0.00" step="0.01" inputmode="decimal">
+                                        </div>
+                                    </div>
+
+                                    <div class="opening-total-banner">
+                                        <span>Fundo Inicial Total:</span>
+                                        <strong id="opening-total-display">R$ 0,00</strong>
+                                    </div>
+
+                                    <button id="btn-open-register" class="touch-btn btn-success btn-block-lg" type="button">
+                                        <i data-lucide="key-round"></i>
+                                        <span>Confirmar Abertura com PIN</span>
+                                    </button>
+                                </div>
+
+                                <!-- ESTADO 2: DASHBOARD DE CAIXA ABERTO -->
+                                <div id="cash-register-dashboard" class="surface-card cash-dashboard-card" style="display: none;">
+                                    <div class="dashboard-topbar">
+                                        <div>
+                                            <h2 class="view-heading">Controle de Caixa</h2>
+                                            <p class="view-subheading">Resumo das movimentações e saldo em gaveta do dia.</p>
+                                        </div>
+                                        <span class="status-badge-styled open">
+                                            <span class="status-dot-mini"></span>
+                                            <span>CAIXA ABERTO</span>
+                                        </span>
+                                    </div>
+
+                                    <!-- Banner do Operador do Turno Ativo -->
+                                    <div class="cash-shift-operator-banner" id="cash-shift-operator-banner">
+                                        <div class="cash-operator-meta-group">
+                                            <div id="cash-shift-avatar" class="cash-shift-avatar-box">OP</div>
+                                            <div>
+                                                <div class="cash-operator-name-row">
+                                                    <span id="cash-shift-employee-name">Operador</span>
+                                                    <span class="cash-shift-code-tag" id="cash-shift-code-tag">Turno #001</span>
+                                                </div>
+                                                <div class="cash-shift-opened-time" id="cash-shift-opened-time">Iniciado às --:--</div>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="touch-btn btn-secondary btn-sm" id="btn-quick-switch-shift" title="Encerrar este turno com PIN para o próximo operador assumir">
+                                            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+                                            <span>Trocar Turno</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Seletor de Modo de Visualização do Caixa: Turno Ativo vs Consolidado Geral do Dia -->
+                                    <div class="cash-view-mode-selector">
+                                        <div class="cash-mode-pills">
+                                            <button type="button" class="cash-mode-pill-btn active" id="btn-cash-mode-active" data-mode="active">
+                                                <i data-lucide="circle-dot" style="width: 14px; height: 14px;"></i>
+                                                <span>Turno Ativo (<span id="cash-mode-active-code">#001</span>)</span>
+                                            </button>
+                                            <button type="button" class="cash-mode-pill-btn" id="btn-cash-mode-daily" data-mode="daily">
+                                                <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
+                                                <span>Consolidado Geral do Dia</span>
+                                            </button>
+                                        </div>
+                                        <div id="cash-mode-desc-tag" class="cash-mode-desc-tag">
+                                            <i data-lucide="info" style="width: 13px; height: 13px; opacity: 0.8;"></i>
+                                            <span id="cash-mode-desc-text">Exibindo exclusivamente as movimentações do turno ativo.</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Grid de Métricas Principais -->
+                                    <div class="cash-metrics-grid">
+                                        <!-- Card Destaque: Saldo Atual em Gaveta -->
+                                        <div class="cash-metric-card primary main-balance">
+                                            <div class="metric-icon-bg"><i data-lucide="wallet"></i></div>
+                                            <div class="main-balance-content">
+                                                <div class="metric-label">Saldo Atual em Gaveta (Sistema)</div>
+                                                <div class="metric-value-lg" id="dash-current-balance">R$ 0,00</div>
+                                                <div class="metric-desc">Fundo Inicial + Entradas Dinheiro − Despesas</div>
+                                            </div>
+                                            <div class="main-balance-badge">
+                                                <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i>
+                                                <span>Dinheiro Físico Esperado</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Subgrid de Métricas Secundárias (3 colunas proporcionais) -->
+                                        <div class="cash-submetrics-grid">
+                                            <div class="cash-metric-card info">
+                                                <div class="metric-icon-bg"><i data-lucide="arrow-down-to-dot"></i></div>
+                                                <div class="metric-label">Fundo Inicial</div>
+                                                <div class="metric-value" id="dash-opening-balance">R$ 0,00</div>
+                                                <div class="metric-desc">Cédulas + Moedas</div>
+                                            </div>
+
+                                            <div class="cash-metric-card success">
+                                                <div class="metric-icon-bg"><i data-lucide="trending-up"></i></div>
+                                                <div class="metric-label">Vendas (Dinheiro)</div>
+                                                <div class="metric-value" id="dash-cash-sales">R$ 0,00</div>
+                                                <div class="metric-desc">Entradas em espécie</div>
+                                            </div>
+
+                                            <div class="cash-metric-card danger">
+                                                <div class="metric-icon-bg"><i data-lucide="trending-down"></i></div>
+                                                <div class="metric-label">Saídas / Despesas</div>
+                                                <div class="metric-value" id="dash-expenses">R$ 0,00</div>
+                                                <div class="metric-desc">Retiradas do caixa</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Métricas de Outros Recebimentos -->
+                                    <div class="electronic-payments-card">
+                                        <div class="section-micro-title">
+                                            <i data-lucide="credit-card"></i>
+                                            <span>Recebimentos Eletrônicos (Não entram na gaveta física)</span>
+                                        </div>
+                                        <div class="electronic-payments-grid">
+                                            <div class="elec-card">
+                                                <span class="elec-icon"><i data-lucide="credit-card"></i></span>
+                                                <div class="elec-info">
+                                                    <span class="elec-label">Cartão:</span>
+                                                    <small class="elec-sub">Débito & Crédito</small>
+                                                </div>
+                                                <strong class="elec-val" id="dash-card-total">R$ 0,00</strong>
+                                            </div>
+                                            <div class="elec-card">
+                                                <span class="elec-icon"><i data-lucide="qr-code"></i></span>
+                                                <div class="elec-info">
+                                                    <span class="elec-label">PIX:</span>
+                                                    <small class="elec-sub">Transferência instantânea</small>
+                                                </div>
+                                                <strong class="elec-val" id="dash-pix-total">R$ 0,00</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Ações do Caixa -->
+                                    <div class="cash-actions-bar">
+                                        <button id="btn-edit-open-register" class="touch-btn btn-secondary" type="button"
+                                            title="Editar Fundo Inicial">
+                                            <i data-lucide="edit-3"></i>
+                                            <span>Editar Fundo Inicial</span>
+                                        </button>
+                                        <button id="btn-close-register" class="touch-btn btn-danger" type="button">
+                                            <i data-lucide="lock"></i>
+                                            <span>Fechar Caixa & Encerrar Turno</span>
+                                        </button>
                                     </div>
                                 </div>
-                                <button type="button" class="touch-btn btn-secondary btn-sm" id="btn-quick-switch-shift" style="height: 36px; padding: 0 14px; font-size: 0.8rem; font-weight: 600;" title="Encerrar este turno com PIN para o próximo operador assumir">
-                                    <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
-                                    <span>Trocar Turno</span>
-                                </button>
+
                             </div>
 
-                            <!-- Grid de Métricas Principais -->
-                            <div class="cash-metrics-grid">
-                                <div class="cash-metric-card primary main-balance">
-                                    <div class="metric-icon-bg"><i data-lucide="wallet"></i></div>
-                                    <div class="metric-label">Saldo Atual em Gaveta (Sistema)</div>
-                                    <div class="metric-value-lg" id="dash-current-balance">R$ 0,00</div>
-                                    <div class="metric-desc">Fundo Inicial + Entradas Dinheiro − Despesas</div>
-                                </div>
-
-                                <div class="cash-metric-card info">
-                                    <div class="metric-icon-bg"><i data-lucide="arrow-down-to-dot"></i></div>
-                                    <div class="metric-label">Fundo Inicial</div>
-                                    <div class="metric-value" id="dash-opening-balance">R$ 0,00</div>
-                                    <div class="metric-desc">Cédulas + Moedas</div>
-                                </div>
-
-                                <div class="cash-metric-card success">
-                                    <div class="metric-icon-bg"><i data-lucide="trending-up"></i></div>
-                                    <div class="metric-label">Vendas (Dinheiro)</div>
-                                    <div class="metric-value" id="dash-cash-sales">R$ 0,00</div>
-                                    <div class="metric-desc">Entradas em espécie</div>
-                                </div>
-
-                                <div class="cash-metric-card danger">
-                                    <div class="metric-icon-bg"><i data-lucide="trending-down"></i></div>
-                                    <div class="metric-label">Saídas / Despesas</div>
-                                    <div class="metric-value" id="dash-expenses">R$ 0,00</div>
-                                    <div class="metric-desc">Retiradas do caixa</div>
-                                </div>
-                            </div>
-
-                            <!-- Métricas de Outros Recebimentos -->
-                            <div class="electronic-payments-card">
-                                <div class="section-micro-title">
-                                    <i data-lucide="credit-card"></i>
-                                    <span>Recebimentos Eletrônicos (Não entram na gaveta física)</span>
-                                </div>
-                                <div class="electronic-payments-grid">
-                                    <div class="elec-card">
-                                        <span class="elec-icon"><i data-lucide="credit-card"></i></span>
-                                        <span class="elec-label">Cartão:</span>
-                                        <strong class="elec-val" id="dash-card-total">R$ 0,00</strong>
+                            <!-- COLUNA LATERAL: HISTÓRICO DE SESSÕES / TURNOS DE HOJE -->
+                            <div class="cash-col-side">
+                                <div class="surface-card cash-sessions-card" id="cash-sessions-card">
+                                    <div class="cash-sessions-header">
+                                        <h3 class="session-history-title">
+                                            <div class="session-header-icon-box">
+                                                <i data-lucide="history"></i>
+                                            </div>
+                                            <div>
+                                                <span class="session-header-main-text">Turnos de Caixa de Hoje</span>
+                                                <small class="session-header-sub-text">Histórico de aberturas e fechamentos</small>
+                                            </div>
+                                        </h3>
+                                        <span id="cash-sessions-count-label" class="cash-sessions-counter">0 turno(s)</span>
                                     </div>
-                                    <div class="elec-card">
-                                        <span class="elec-icon"><i data-lucide="qr-code"></i></span>
-                                        <span class="elec-label">PIX:</span>
-                                        <strong class="elec-val" id="dash-pix-total">R$ 0,00</strong>
+                                    <div id="cash-sessions-list" class="cash-sessions-list">
+                                        <div class="cash-sessions-empty">
+                                            <i data-lucide="clock"></i>
+                                            <span>Nenhum turno registrado hoje ainda.</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Ações do Caixa -->
-                            <div class="cash-actions-bar">
-                                <button id="btn-edit-open-register" class="touch-btn btn-secondary" type="button"
-                                    title="Editar Fundo Inicial">
-                                    <i data-lucide="edit-3"></i>
-                                    <span>Editar Fundo Inicial</span>
-                                </button>
-                                <button id="btn-close-register" class="touch-btn btn-danger" type="button">
-                                    <i data-lucide="lock"></i>
-                                    <span>Fechar Caixa & Encerrar Turno</span>
-                                </button>
-                            </div>
                         </div>
 
-                        <!-- HISTÓRICO DE SESSÕES / TURNOS DE CAIXA DE HOJE -->
-                        <div class="surface-card cash-sessions-card" style="margin-top: 1.25rem;">
-                            <div class="cash-sessions-header">
-                                <h3 class="session-history-title">
-                                    <div class="session-header-icon-box">
-                                        <i data-lucide="history"></i>
-                                    </div>
-                                    <div>
-                                        <span class="session-header-main-text">Turnos de Caixa de Hoje</span>
-                                        <small class="session-header-sub-text">Histórico de aberturas e fechamentos</small>
-                                    </div>
-                                </h3>
-                                <span id="cash-sessions-count-label" class="cash-sessions-counter">0 turno(s)</span>
-                            </div>
-                            <div id="cash-sessions-list" class="cash-sessions-list">
-                                <div class="cash-sessions-empty">
-                                    <i data-lucide="clock"></i>
-                                    <span>Nenhum turno registrado hoje ainda.</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -2137,6 +2298,9 @@
                     Configurar agora
                 </button>
             </div>
+        </div>
+    </div>
+
     <!-- MODAL: CADASTRAR / EDITAR FUNCIONÁRIO -->
     <div class="modal-backdrop" id="employee-form-modal" style="display: none; z-index: 10040;">
         <div class="modal-card" style="max-width: 480px;">

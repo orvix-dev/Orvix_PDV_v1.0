@@ -1,0 +1,2 @@
+[  966126ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ http://localhost:3000/node_modules/.vite/deps/firebase_auth.js?v=9a6e9046:7084
+[  966126ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ http://localhost:3000/node_modules/.vite/deps/firebase_auth.js?v=9a6e9046:7084

@@ -50,7 +50,11 @@ class OrvixApp {
       catalogCategory: 'all',
       catalogSearch: '',
       selectedRankingPeriod: 'today',
-      selectedTeamSubTab: 'members'
+      selectedTeamSubTab: 'members',
+      quickCaixaDropdownOpen: false,
+      quickCaixaView: 'active',
+      cashDashboardViewMode: 'active',
+      quickCaixaHoverTimer: null
     };
   }
 
@@ -150,9 +154,38 @@ class OrvixApp {
       pageBreadcrumb: document.getElementById('page-breadcrumb'),
       currentTime: document.getElementById('current-time'),
       currentDate: document.getElementById('current-date'),
+      headerCaixaWrapper: document.getElementById('header-caixa-wrapper'),
       headerCaixaBadge: document.getElementById('header-caixa-badge'),
       headerCaixaDot: document.getElementById('header-caixa-dot'),
       headerCaixaText: document.getElementById('header-caixa-text'),
+      headerCaixaChevron: document.getElementById('header-caixa-chevron'),
+      quickCaixaDropdown: document.getElementById('quick-caixa-dropdown'),
+      qcStatusPill: document.getElementById('qc-status-pill'),
+      qcStatusDot: document.getElementById('qc-status-dot'),
+      qcStatusLabel: document.getElementById('qc-status-label'),
+      qcBtnOpenFullCaixa: document.getElementById('qc-btn-open-full-caixa'),
+      qcOperatorCard: document.getElementById('qc-operator-card'),
+      qcOperatorAvatar: document.getElementById('qc-operator-avatar'),
+      qcOperatorName: document.getElementById('qc-operator-name'),
+      qcSessionTag: document.getElementById('qc-session-tag'),
+      qcOperatorSub: document.getElementById('qc-operator-sub'),
+      qcTabActiveSession: document.getElementById('qc-tab-active-session'),
+      qcTabDailyGeneral: document.getElementById('qc-tab-daily-general'),
+      qcPanelActive: document.getElementById('qc-panel-active'),
+      qcPanelDaily: document.getElementById('qc-panel-daily'),
+      qcActiveBalance: document.getElementById('qc-active-balance'),
+      qcActiveOpening: document.getElementById('qc-active-opening'),
+      qcActiveSales: document.getElementById('qc-active-sales'),
+      qcActiveCash: document.getElementById('qc-active-cash'),
+      qcActiveElec: document.getElementById('qc-active-elec'),
+      qcDailyRevenue: document.getElementById('qc-daily-revenue'),
+      qcDailyCash: document.getElementById('qc-daily-cash'),
+      qcDailyCard: document.getElementById('qc-daily-card'),
+      qcDailyPix: document.getElementById('qc-daily-pix'),
+      qcDailyExpenses: document.getElementById('qc-daily-expenses'),
+      qcDailyDrawerTotal: document.getElementById('qc-daily-drawer-total'),
+      qcOperatorsCount: document.getElementById('qc-operators-count'),
+      quickCaixaOperatorsList: document.getElementById('quick-caixa-operators-list'),
       sidebarCaixaStatus: document.getElementById('sidebar-caixa-status'),
       discountBalloon: document.getElementById('discount-balloon'),
       discountDetails: document.getElementById('discount-details'),
@@ -414,6 +447,13 @@ class OrvixApp {
       employeeFormStatus: document.getElementById('employee-form-status'),
       btnCloseEmployeeModal: document.getElementById('btn-close-employee-modal'),
       btnCancelEmployeeForm: document.getElementById('btn-cancel-employee-form'),
+      btnSaveEmployeeForm: document.getElementById('btn-save-employee-form'),
+
+      // Modo de Visualização do Dashboard do Caixa
+      btnCashModeActive: document.getElementById('btn-cash-mode-active'),
+      btnCashModeDaily: document.getElementById('btn-cash-mode-daily'),
+      cashModeActiveCode: document.getElementById('cash-mode-active-code'),
+      cashModeDescText: document.getElementById('cash-mode-desc-text'),
 
       // Ranking & Pódio
       teamPodiumContainer: document.getElementById('team-podium-container'),
@@ -451,7 +491,84 @@ class OrvixApp {
       });
     });
 
-    this.DOM.headerCaixaBadge?.addEventListener('click', () => this.switchTab('caixa'));
+    // 2. Troca Rápida de Caixa: Hover, Toque e Ações do Dropdown
+    this.DOM.headerCaixaWrapper?.addEventListener('mouseenter', () => {
+      clearTimeout(this.state.quickCaixaHoverTimer);
+      this.openQuickCaixaDropdown();
+    });
+
+    this.DOM.headerCaixaWrapper?.addEventListener('mouseleave', () => {
+      this.state.quickCaixaHoverTimer = setTimeout(() => {
+        this.closeQuickCaixaDropdown();
+      }, 250);
+    });
+
+    // Toque / Clique no Badge do Header (Mobile & Desktop)
+    this.DOM.headerCaixaBadge?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleQuickCaixaDropdown();
+    });
+
+    // Fechar ao clicar fora do menu
+    document.addEventListener('click', (e) => {
+      if (this.state.quickCaixaDropdownOpen) {
+        const isInsideDropdown = e.target.closest('#header-caixa-wrapper');
+        const isInsideModal = e.target.closest('.modal-backdrop');
+        if (!isInsideDropdown && !isInsideModal) {
+          this.closeQuickCaixaDropdown();
+        }
+      }
+    });
+
+    // Fechar ao pressionar ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.state.quickCaixaDropdownOpen) {
+        this.closeQuickCaixaDropdown();
+      }
+    });
+
+    // Botão Gerenciar Caixa Completo (dentro do Dropdown)
+    this.DOM.qcBtnOpenFullCaixa?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.closeQuickCaixaDropdown();
+      this.switchTab('caixa');
+    });
+
+    // Tabs de Visualização Financeira do Dropdown (Caixa Ativo vs Geral do Dia)
+    this.DOM.qcTabActiveSession?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.state.quickCaixaView = 'active';
+      this.renderQuickCaixaDropdown();
+    });
+
+    this.DOM.qcTabDailyGeneral?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.state.quickCaixaView = 'daily';
+      this.renderQuickCaixaDropdown();
+    });
+
+    // Ações de Troca Rápida de Operador na Lista do Dropdown
+    this.DOM.quickCaixaOperatorsList?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-qc-assume');
+      if (btn) {
+        e.stopPropagation();
+        const empId = btn.dataset.empId;
+        if (empId) {
+          this.handleSwitchOperatorQuick(empId);
+        }
+      }
+    });
+
+    // Seletor de Modo no Dashboard Principal do Caixa (Turno Ativo vs Consolidado Geral do Dia)
+    this.DOM.btnCashModeActive?.addEventListener('click', () => {
+      this.state.cashDashboardViewMode = 'active';
+      this.renderCashRegister();
+    });
+
+    this.DOM.btnCashModeDaily?.addEventListener('click', () => {
+      this.state.cashDashboardViewMode = 'daily';
+      this.renderCashRegister();
+    });
 
     // 3. PDV: Tipo de Produto Pesado (Açaí vs Sorvete)
     document.querySelectorAll('.product-type-selector .quick-add-btn').forEach(btn => {
@@ -805,6 +922,10 @@ class OrvixApp {
         if (target) target.classList.add('active');
         if (sub === 'promocoes') {
           this.renderDiscountControls();
+        }
+        if (sub === 'equipe') {
+          this.renderEmployees();
+          this.renderShiftRanking();
         }
       });
     });
@@ -1258,6 +1379,8 @@ class OrvixApp {
     }
     if (tabName === 'admin') {
       this.renderDiscountControls();
+      this.renderEmployees();
+      this.renderShiftRanking();
     }
     if (tabName === 'venda') {
       this.updateCalculatedPrice();
@@ -2171,15 +2294,16 @@ class OrvixApp {
     const isOpen = cashService.isOpen();
     const sales = historyService.getSalesForDate(this.state.today);
     const expenses = expensesService.getExpensesForDate(this.state.today);
-    const metrics = cashService.getTodayMetrics(sales, expenses);
+    const activeMetrics = cashService.getActiveSessionMetrics(sales, expenses);
+    const dailyMetrics = cashService.getDailyConsolidatedMetrics(this.state.today, sales, expenses);
     const currentSession = cashService.getCurrentSession();
     const activeEmp = employeeService.getActiveEmployee();
 
     if (this.DOM.headerCaixaDot) {
-      this.DOM.headerCaixaDot.className = `header-caixa-dot ${isOpen ? 'open' : ''}`;
+      this.DOM.headerCaixaDot.className = `status-indicator-dot ${isOpen ? 'open' : ''}`;
     }
     if (this.DOM.headerCaixaText) {
-      this.DOM.headerCaixaText.innerText = isOpen ? 'Caixa Aberto' : 'Caixa Fechado';
+      this.DOM.headerCaixaText.innerText = isOpen ? `Caixa: Aberto (${activeMetrics.sessionCode})` : 'Caixa: Fechado';
     }
     if (this.DOM.sidebarCaixaStatus) {
       this.DOM.sidebarCaixaStatus.className = `sidebar-status-dot ${isOpen ? 'active' : ''}`;
@@ -2194,7 +2318,7 @@ class OrvixApp {
     if (this.DOM.cashShiftOperatorBanner) {
       if (isOpen && currentSession) {
         this.DOM.cashShiftOperatorBanner.style.display = 'flex';
-        const empName = currentSession.openedByEmployeeName || currentSession.openedByName || activeEmp?.name || 'Operador';
+        const empName = currentSession.currentEmployeeName || currentSession.openedByEmployeeName || activeEmp?.name || 'Operador';
         const emp = employeeService.findEmployeeByName(empName) || activeEmp;
         if (this.DOM.cashShiftEmployeeName) this.DOM.cashShiftEmployeeName.innerText = empName;
         if (this.DOM.cashShiftCodeTag) this.DOM.cashShiftCodeTag.innerText = `Turno ${currentSession.sessionCode || '#001'}`;
@@ -2204,19 +2328,45 @@ class OrvixApp {
         }
         if (this.DOM.cashShiftOpenedTime && currentSession.openedAt) {
           const time = new Date(currentSession.openedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-          this.DOM.cashShiftOpenedTime.innerText = `Iniciado às ${time}`;
+          const switchesCount = Array.isArray(currentSession.operatorSwitches) ? Math.max(0, currentSession.operatorSwitches.length - 1) : 0;
+          const switchLabel = switchesCount > 0 ? ` &bull; ${switchesCount} troca(s) de operador` : '';
+          this.DOM.cashShiftOpenedTime.innerHTML = `Iniciado às ${time}${switchLabel}`;
         }
       } else {
         this.DOM.cashShiftOperatorBanner.style.display = 'none';
       }
     }
 
-    if (this.DOM.dashOpeningBalance) this.DOM.dashOpeningBalance.innerText = `R$ ${metrics.openingTotal.toFixed(2)}`;
-    if (this.DOM.dashCashSales) this.DOM.dashCashSales.innerText = `R$ ${metrics.cashSales.toFixed(2)}`;
-    if (this.DOM.dashExpenses) this.DOM.dashExpenses.innerText = `R$ ${metrics.totalExpenses.toFixed(2)}`;
-    if (this.DOM.dashCurrentBalance) this.DOM.dashCurrentBalance.innerText = `R$ ${metrics.currentBalance.toFixed(2)}`;
-    if (this.DOM.dashCardTotal) this.DOM.dashCardTotal.innerText = `R$ ${metrics.cardSales.toFixed(2)}`;
-    if (this.DOM.dashPixTotal) this.DOM.dashPixTotal.innerText = `R$ ${metrics.pixSales.toFixed(2)}`;
+    // Seletor de Modo no Dashboard (Turno Ativo vs Consolidado Geral do Dia)
+    const viewMode = this.state.cashDashboardViewMode || 'active';
+    if (this.DOM.btnCashModeActive) this.DOM.btnCashModeActive.classList.toggle('active', viewMode === 'active');
+    if (this.DOM.btnCashModeDaily) this.DOM.btnCashModeDaily.classList.toggle('active', viewMode === 'daily');
+    if (this.DOM.cashModeActiveCode) this.DOM.cashModeActiveCode.innerText = activeMetrics.sessionCode || '#001';
+    if (this.DOM.cashModeDescText) {
+      this.DOM.cashModeDescText.innerText = viewMode === 'active'
+        ? 'Exibindo exclusivamente as movimentações do turno ativo.'
+        : 'Exibindo o consolidado financeiro de todos os caixas e operadores de hoje.';
+    }
+
+    // Exibe métricas de acordo com o modo selecionado
+    if (viewMode === 'active') {
+      if (this.DOM.dashOpeningBalance) this.DOM.dashOpeningBalance.innerText = `R$ ${activeMetrics.openingTotal.toFixed(2)}`;
+      if (this.DOM.dashCashSales) this.DOM.dashCashSales.innerText = `R$ ${activeMetrics.cashSales.toFixed(2)}`;
+      if (this.DOM.dashExpenses) this.DOM.dashExpenses.innerText = `R$ ${activeMetrics.totalExpenses.toFixed(2)}`;
+      if (this.DOM.dashCurrentBalance) this.DOM.dashCurrentBalance.innerText = `R$ ${activeMetrics.currentBalance.toFixed(2)}`;
+      if (this.DOM.dashCardTotal) this.DOM.dashCardTotal.innerText = `R$ ${activeMetrics.cardSales.toFixed(2)}`;
+      if (this.DOM.dashPixTotal) this.DOM.dashPixTotal.innerText = `R$ ${activeMetrics.pixSales.toFixed(2)}`;
+    } else {
+      // Modo Consolidado Geral do Dia
+      if (this.DOM.dashOpeningBalance) this.DOM.dashOpeningBalance.innerText = `R$ ${dailyMetrics.totalOpeningFunds.toFixed(2)}`;
+      if (this.DOM.dashCashSales) this.DOM.dashCashSales.innerText = `R$ ${dailyMetrics.cashSales.toFixed(2)}`;
+      if (this.DOM.dashExpenses) this.DOM.dashExpenses.innerText = `R$ ${dailyMetrics.totalExpenses.toFixed(2)}`;
+      if (this.DOM.dashCurrentBalance) this.DOM.dashCurrentBalance.innerText = `R$ ${dailyMetrics.consolidatedDrawerBalance.toFixed(2)}`;
+      if (this.DOM.dashCardTotal) this.DOM.dashCardTotal.innerText = `R$ ${dailyMetrics.cardSales.toFixed(2)}`;
+      if (this.DOM.dashPixTotal) this.DOM.dashPixTotal.innerText = `R$ ${dailyMetrics.pixSales.toFixed(2)}`;
+    }
+
+    this.renderQuickCaixaDropdown();
 
     // Renderiza Lista de Sessões/Turnos do Dia (Múltiplas Aberturas)
     if (this.DOM.cashSessionsList) {
@@ -2403,27 +2553,25 @@ class OrvixApp {
 
   async handleQuickSwitchShift() {
     const currentSession = cashService.getCurrentSession();
-    if (!currentSession) {
+    if (!currentSession || !cashService.isOpen()) {
       this.switchTab('caixa');
       return;
     }
 
-    const opName = currentSession.openedByEmployeeName || currentSession.openedByName || 'Operador';
-    const confirmed = await confirmModal.show({
-      title: 'Troca de Turno de Caixa',
-      message: `Para passar o caixa para outro colaborador, é necessário encerrar o turno atual de <strong>${opName}</strong>. Deseja prosseguir com o fechamento?`,
-      confirmText: 'Sim, Encerrar e Trocar',
-      cancelText: 'Cancelar',
+    const opName = currentSession.currentEmployeeName || currentSession.openedByEmployeeName || 'Operador';
+    const choice = await confirmModal.show({
+      title: 'Troca de Operador no Caixa',
+      message: `O caixa atual está operando no turno <strong>${currentSession.sessionCode}</strong> com <strong>${opName}</strong>.<br><br>Deseja realizar a <strong>troca rápida de operador</strong> (mantendo a sessão em aberto), ou prefere encerrar definitivamente este turno?`,
+      confirmText: 'Troca Rápida de Operador',
+      cancelText: 'Encerrar Caixa Definitivo',
       type: 'info',
       icon: 'refresh-cw'
     });
 
-    if (confirmed) {
+    if (choice) {
+      this.openQuickCaixaDropdown();
+    } else {
       await this.handleCloseRegister();
-      if (!cashService.isOpen()) {
-        this.switchTab('caixa');
-        this.showToast('Turno anterior encerrado! Selecione o próximo colaborador para iniciar o novo turno.', 'info');
-      }
     }
   }
 
@@ -3254,6 +3402,7 @@ class OrvixApp {
     this.renderShiftRanking();
     this.renderFullShiftsHistory();
     this.renderActiveOperatorHeader();
+    this.renderQuickCaixaDropdown();
   }
 
   switchTeamSubTab(subTabName = 'members') {
@@ -3644,6 +3793,8 @@ class OrvixApp {
 
   openEmployeeModal(emp = null) {
     if (this.DOM.employeeFormModal) {
+      const isAdmin = this.isUserAdmin();
+
       if (emp) {
         if (this.DOM.employeeModalTitle) this.DOM.employeeModalTitle.innerText = 'Editar Funcionário';
         if (this.DOM.employeeFormId) this.DOM.employeeFormId.value = emp.id;
@@ -3652,6 +3803,12 @@ class OrvixApp {
         if (this.DOM.employeeFormPin) this.DOM.employeeFormPin.value = emp.pin;
         if (this.DOM.employeeFormPhone) this.DOM.employeeFormPhone.value = emp.phone || '';
         if (this.DOM.employeeFormStatus) this.DOM.employeeFormStatus.value = emp.status || 'ativo';
+
+        // Não permite que não-administradores alterem o cargo para Administrador
+        if (this.DOM.employeeFormRole) {
+          const adminOpt = this.DOM.employeeFormRole.querySelector('option[value="Administrador"]');
+          if (adminOpt) adminOpt.disabled = !isAdmin;
+        }
       } else {
         if (this.DOM.employeeModalTitle) this.DOM.employeeModalTitle.innerText = 'Novo Funcionário';
         if (this.DOM.employeeFormId) this.DOM.employeeFormId.value = '';
@@ -3660,6 +3817,11 @@ class OrvixApp {
         if (this.DOM.employeeFormPin) this.DOM.employeeFormPin.value = '';
         if (this.DOM.employeeFormPhone) this.DOM.employeeFormPhone.value = '';
         if (this.DOM.employeeFormStatus) this.DOM.employeeFormStatus.value = 'ativo';
+
+        if (this.DOM.employeeFormRole) {
+          const adminOpt = this.DOM.employeeFormRole.querySelector('option[value="Administrador"]');
+          if (adminOpt) adminOpt.disabled = !isAdmin;
+        }
       }
 
       this.DOM.employeeFormModal.style.display = 'flex';
@@ -3677,22 +3839,51 @@ class OrvixApp {
 
   async handleSaveEmployee() {
     const id = this.DOM.employeeFormId?.value || null;
-    const name = this.DOM.employeeFormName?.value || '';
+    const name = (this.DOM.employeeFormName?.value || '').trim();
     const role = this.DOM.employeeFormRole?.value || 'Operador de Caixa';
-    const pin = this.DOM.employeeFormPin?.value || '';
-    const phone = this.DOM.employeeFormPhone?.value || '';
+    const pin = (this.DOM.employeeFormPin?.value || '').trim();
+    const phone = (this.DOM.employeeFormPhone?.value || '').trim();
     const status = this.DOM.employeeFormStatus?.value || 'ativo';
 
-    if (!name.trim()) {
-      this.showToast('Informe o nome do funcionário.', 'warning');
+    // Validação 1: Nome
+    if (!name) {
+      this.showToast('Informe o nome completo do funcionário.', 'warning');
+      this.DOM.employeeFormName?.focus();
+      return;
+    }
+    if (name.length < 2) {
+      this.showToast('O nome deve ter no mínimo 2 caracteres.', 'warning');
       this.DOM.employeeFormName?.focus();
       return;
     }
 
-    if (!pin.trim() || pin.trim().length < 4) {
-      this.showToast('O PIN deve conter pelo menos 4 dígitos numéricos.', 'warning');
+    // Validação 2: PIN
+    if (!pin) {
+      this.showToast('Informe o PIN de vendas e caixa.', 'warning');
       this.DOM.employeeFormPin?.focus();
       return;
+    }
+    if (!/^\d{4,6}$/.test(pin)) {
+      this.showToast('O PIN deve conter entre 4 e 6 dígitos numéricos (apenas números).', 'warning');
+      this.DOM.employeeFormPin?.focus();
+      return;
+    }
+
+    // Validação 3: Permissão de Administrador
+    if (role === 'Administrador' && !this.isUserAdmin()) {
+      this.showToast('Apenas administradores podem atribuir a função de Administrador.', 'error');
+      return;
+    }
+
+    // Prevenção de Envio Duplicado
+    const saveBtn = this.DOM.btnSaveEmployeeForm;
+    let originalBtnHtml = '';
+    if (saveBtn) {
+      if (saveBtn.disabled) return;
+      saveBtn.disabled = true;
+      originalBtnHtml = saveBtn.innerHTML;
+      saveBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> <span>Salvando...</span>';
+      if (window.lucide) lucide.createIcons();
     }
 
     try {
@@ -3709,9 +3900,20 @@ class OrvixApp {
       this.renderEmployees();
       this.renderShiftRanking();
       this.renderActiveOperatorHeader();
-      this.showToast(`Funcionário "${name}" salvo com sucesso!`, 'success');
+      this.renderCashRegister();
+      this.renderQuickCaixaDropdown();
+
+      const actionText = id ? 'atualizado' : 'cadastrado';
+      this.showToast(`Funcionário "${name}" ${actionText} com sucesso!`, 'success');
     } catch (err) {
-      this.showToast(err.message, 'error');
+      console.error('[Orvix PDV] Erro ao salvar funcionário:', err);
+      this.showToast(err.message || 'Erro ao salvar colaborador.', 'error');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalBtnHtml;
+        if (window.lucide) lucide.createIcons();
+      }
     }
   }
 
@@ -3724,38 +3926,317 @@ class OrvixApp {
       return;
     }
 
-    // Se o caixa estiver aberto com outro operador, avisa que é necessário fechar o turno anterior antes
     const currentSession = cashService.getCurrentSession();
-    if (currentSession && cashService.isOpen() && currentSession.openedByEmployeeId !== emp.id) {
-      const confirmed = await confirmModal.show({
-        title: 'Caixa com Turno em Andamento',
-        message: `O caixa atual está aberto com o turno de <strong>${currentSession.openedByEmployeeName || 'outro operador'}</strong>. Para assumir este caixa, encerre o turno atual antes ou continue com o operador vinculado. Deseja trocar de turno agora?`,
-        confirmText: 'Sim, Trocar Turno',
-        cancelText: 'Cancelar',
-        type: 'warning',
-        icon: 'refresh-cw'
-      });
-      if (confirmed) {
-        await this.handleCloseRegister();
-      }
+    const isRegisterOpen = cashService.isOpen();
+
+    if (!isRegisterOpen) {
+      employeeService.setActiveEmployee(emp);
+      this.renderEmployees();
+      this.renderActiveOperatorHeader();
+      this.renderQuickCaixaDropdown();
+      this.showToast(`Operador "${emp.name}" selecionado. Abra o caixa para iniciar as operações.`, 'info');
+      this.switchTab('caixa');
       return;
+    }
+
+    const currentOpId = currentSession.currentEmployeeId || currentSession.openedByEmployeeId;
+    if (currentOpId === emp.id) {
+      this.showToast(`"${emp.name}" já é o operador atualmente ativo neste caixa.`, 'info');
+      return;
+    }
+
+    // Regra de segurança: Venda em andamento no carrinho
+    if (posService.getCart().length > 0) {
+      const keepCart = await confirmModal.show({
+        title: 'Venda em Andamento',
+        message: `Existe uma venda com <strong>${posService.getCart().length} item(ns)</strong> no carrinho.<br>Deseja <strong>manter</strong> os itens para que <strong>${emp.name}</strong> prossiga com o atendimento, ou cancelar a venda antes da troca?`,
+        confirmText: 'Manter Itens no Carrinho',
+        cancelText: 'Limpar Carrinho',
+        type: 'warning',
+        icon: 'shopping-cart'
+      });
+      if (!keepCart) {
+        posService.clearCart();
+        this.renderCart();
+      }
     }
 
     // Solicita o PIN do operador para assumir
     const pinResult = await pinModal.prompt({
-      title: 'Autenticação de Operador',
-      desc: `Digite seu PIN de 4 dígitos para assumir como operador:`,
+      title: 'Troca de Operador no Caixa',
+      desc: `Digite o PIN de 4 a 6 dígitos de <strong>${emp.name}</strong> para assumir o caixa:`,
       employee: emp,
       validate: (inputPin) => employeeService.validatePin(emp.id, inputPin)
     });
 
     if (pinResult.confirmed) {
+      await cashService.switchOperator(emp, authService.currentUser, 'Troca de operador via Equipe');
       employeeService.setActiveEmployee(emp);
+
       this.renderEmployees();
       this.renderActiveOperatorHeader();
       this.renderCashRegister();
-      this.showToast(`Operador alterado para "${emp.name}". Vendas atribuídas a este operador!`, 'success');
+      this.renderShiftRanking();
+      this.renderQuickCaixaDropdown();
+
+      this.showToast(`Caixa assumido com sucesso por "${emp.name}"! Turno ${currentSession.sessionCode} continua em aberto.`, 'success');
       this.switchTab('venda');
+    }
+  }
+
+  // --- MÉTODOS DO MENU FLUTUANTE DE TROCA RÁPIDA DE CAIXAS ---
+  toggleQuickCaixaDropdown() {
+    if (this.state.quickCaixaDropdownOpen) {
+      this.closeQuickCaixaDropdown();
+    } else {
+      this.openQuickCaixaDropdown();
+    }
+  }
+
+  openQuickCaixaDropdown() {
+    this.state.quickCaixaDropdownOpen = true;
+    if (this.DOM.quickCaixaDropdown) {
+      this.DOM.quickCaixaDropdown.style.display = 'flex';
+      this.DOM.quickCaixaDropdown.classList.add('show');
+    }
+    if (this.DOM.headerCaixaWrapper) {
+      this.DOM.headerCaixaWrapper.classList.add('dropdown-open');
+    }
+    this.renderQuickCaixaDropdown();
+  }
+
+  closeQuickCaixaDropdown() {
+    this.state.quickCaixaDropdownOpen = false;
+    if (this.DOM.quickCaixaDropdown) {
+      this.DOM.quickCaixaDropdown.style.display = 'none';
+      this.DOM.quickCaixaDropdown.classList.remove('show');
+    }
+    if (this.DOM.headerCaixaWrapper) {
+      this.DOM.headerCaixaWrapper.classList.remove('dropdown-open');
+    }
+  }
+
+  renderQuickCaixaDropdown() {
+    if (!this.DOM.quickCaixaDropdown) return;
+
+    const isOpen = cashService.isOpen();
+    const sales = historyService.getSalesForDate(this.state.today);
+    const expenses = expensesService.getExpensesForDate(this.state.today);
+    const activeMetrics = cashService.getActiveSessionMetrics(sales, expenses);
+    const dailyMetrics = cashService.getDailyConsolidatedMetrics(this.state.today, sales, expenses);
+    const currentSession = cashService.getCurrentSession();
+    const activeEmp = employeeService.getActiveEmployee();
+
+    // 1. Status Pill & Tag
+    if (this.DOM.qcStatusPill) {
+      this.DOM.qcStatusPill.className = `quick-caixa-status-pill ${isOpen ? 'open' : ''}`;
+    }
+    if (this.DOM.qcStatusDot) {
+      this.DOM.qcStatusDot.className = `status-dot-mini ${isOpen ? 'active' : ''}`;
+    }
+    if (this.DOM.qcStatusLabel) {
+      this.DOM.qcStatusLabel.innerText = isOpen ? `Turno ${activeMetrics.sessionCode} Ativo` : 'Caixa Fechado';
+    }
+
+    // 2. Operador Card
+    const currentOpName = activeMetrics.currentOperatorName || activeEmp?.name || 'Operador';
+    const currentOpRole = activeMetrics.currentOperatorRole || activeEmp?.role || 'Operador de Caixa';
+    const currentOp = employeeService.findEmployeeByName(currentOpName) || activeEmp;
+
+    if (this.DOM.qcOperatorName) {
+      this.DOM.qcOperatorName.innerText = currentOpName;
+    }
+    if (this.DOM.qcSessionTag) {
+      this.DOM.qcSessionTag.innerText = isOpen ? activeMetrics.sessionCode : 'Fechado';
+    }
+    if (this.DOM.qcOperatorAvatar) {
+      this.DOM.qcOperatorAvatar.innerText = currentOpName.slice(0, 2).toUpperCase();
+      if (currentOp?.avatarColor) {
+        this.DOM.qcOperatorAvatar.style.background = currentOp.avatarColor;
+      }
+    }
+    if (this.DOM.qcOperatorSub) {
+      if (isOpen && activeMetrics.openedAt) {
+        const time = new Date(activeMetrics.openedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        this.DOM.qcOperatorSub.innerText = `${currentOpRole} • Aberto às ${time}`;
+      } else {
+        this.DOM.qcOperatorSub.innerText = 'Nenhum turno em andamento';
+      }
+    }
+
+    // 3. Tab State
+    const view = this.state.quickCaixaView || 'active';
+    if (this.DOM.qcTabActiveSession) {
+      this.DOM.qcTabActiveSession.classList.toggle('active', view === 'active');
+    }
+    if (this.DOM.qcTabDailyGeneral) {
+      this.DOM.qcTabDailyGeneral.classList.toggle('active', view === 'daily');
+    }
+    if (this.DOM.qcPanelActive) {
+      this.DOM.qcPanelActive.style.display = view === 'active' ? 'flex' : 'none';
+    }
+    if (this.DOM.qcPanelDaily) {
+      this.DOM.qcPanelDaily.style.display = view === 'daily' ? 'flex' : 'none';
+    }
+
+    // 4. Painel Caixa Ativo
+    if (this.DOM.qcActiveBalance) {
+      this.DOM.qcActiveBalance.innerText = `R$ ${activeMetrics.currentBalance.toFixed(2)}`;
+    }
+    if (this.DOM.qcActiveOpening) {
+      this.DOM.qcActiveOpening.innerText = `R$ ${activeMetrics.openingTotal.toFixed(2)}`;
+    }
+    if (this.DOM.qcActiveSales) {
+      this.DOM.qcActiveSales.innerText = `R$ ${activeMetrics.totalSalesAmount.toFixed(2)} (${activeMetrics.totalSalesCount} vendas)`;
+    }
+    if (this.DOM.qcActiveCash) {
+      this.DOM.qcActiveCash.innerText = `R$ ${activeMetrics.cashSales.toFixed(2)}`;
+    }
+    if (this.DOM.qcActiveElec) {
+      this.DOM.qcActiveElec.innerText = `R$ ${(activeMetrics.cardSales + activeMetrics.pixSales).toFixed(2)}`;
+    }
+
+    // 5. Painel Caixa Geral do Dia (Consolidado)
+    if (this.DOM.qcDailyRevenue) {
+      this.DOM.qcDailyRevenue.innerText = `R$ ${dailyMetrics.totalSalesAmount.toFixed(2)} (${dailyMetrics.totalSalesCount} vendas)`;
+    }
+    if (this.DOM.qcDailyCash) {
+      this.DOM.qcDailyCash.innerText = `R$ ${dailyMetrics.cashSales.toFixed(2)}`;
+    }
+    if (this.DOM.qcDailyCard) {
+      this.DOM.qcDailyCard.innerText = `R$ ${dailyMetrics.cardSales.toFixed(2)}`;
+    }
+    if (this.DOM.qcDailyPix) {
+      this.DOM.qcDailyPix.innerText = `R$ ${dailyMetrics.pixSales.toFixed(2)}`;
+    }
+    if (this.DOM.qcDailyExpenses) {
+      this.DOM.qcDailyExpenses.innerText = `R$ ${dailyMetrics.totalExpenses.toFixed(2)}`;
+    }
+    if (this.DOM.qcDailyDrawerTotal) {
+      this.DOM.qcDailyDrawerTotal.innerText = `R$ ${dailyMetrics.consolidatedDrawerBalance.toFixed(2)}`;
+    }
+
+    // 6. Lista de Operadores Disponíveis para Troca Rápida
+    if (this.DOM.quickCaixaOperatorsList) {
+      const employees = employeeService.getEmployees(true); // Apenas ativos
+      if (this.DOM.qcOperatorsCount) {
+        this.DOM.qcOperatorsCount.innerText = `${employees.length} colaborador(es)`;
+      }
+
+      const activeOpId = currentSession?.currentEmployeeId || activeEmp?.id;
+
+      if (employees.length === 0) {
+        this.DOM.quickCaixaOperatorsList.innerHTML = `
+          <div style="text-align: center; padding: 12px; color: var(--text-muted); font-size: 0.78rem;">
+            Nenhum colaborador ativo cadastrado.
+          </div>
+        `;
+      } else {
+        this.DOM.quickCaixaOperatorsList.innerHTML = employees.map(e => {
+          const isCurrentActive = e.id === activeOpId;
+          const initials = e.name.slice(0, 2).toUpperCase();
+          const avatarBg = e.avatarColor || 'linear-gradient(135deg, #7c3aed, #ec4899)';
+
+          return `
+            <div class="qc-operator-item ${isCurrentActive ? 'active-now' : ''}">
+              <div class="qc-op-avatar-mini" style="background: ${avatarBg};">
+                ${initials}
+              </div>
+              <div class="qc-op-meta">
+                <span class="qc-op-name" title="${e.name}">${e.name}</span>
+                <span class="qc-op-role">${e.role}</span>
+              </div>
+              <div>
+                ${isCurrentActive ? `
+                  <span class="badge-qc-active">
+                    <i data-lucide="check" style="width: 11px; height: 11px;"></i>
+                    <span>Ativo</span>
+                  </span>
+                ` : `
+                  <button type="button" class="btn-qc-assume" data-emp-id="${e.id}" title="Trocar para ${e.name}">
+                    <i data-lucide="user-check"></i>
+                    <span>Assumir</span>
+                  </button>
+                `}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async handleSwitchOperatorQuick(empId) {
+    const emp = employeeService.getEmployeeById(empId);
+    if (!emp) return;
+
+    if (emp.status !== 'ativo') {
+      this.showToast('Este colaborador está inativo no sistema.', 'warning');
+      return;
+    }
+
+    const currentSession = cashService.getCurrentSession();
+    const isRegisterOpen = cashService.isOpen();
+
+    if (!isRegisterOpen) {
+      this.showToast('O caixa está fechado. Abra o caixa informando o saldo inicial antes de assumir.', 'warning');
+      this.closeQuickCaixaDropdown();
+      this.switchTab('caixa');
+      return;
+    }
+
+    const activeOpId = currentSession.currentEmployeeId || currentSession.openedByEmployeeId;
+    if (activeOpId === emp.id) {
+      this.showToast(`"${emp.name}" já é o operador atualmente ativo neste caixa.`, 'info');
+      this.closeQuickCaixaDropdown();
+      return;
+    }
+
+    // Fecha dropdown para não sobrepor o modal de PIN ou confirmação
+    this.closeQuickCaixaDropdown();
+
+    // Regra de segurança: Venda em andamento
+    if (posService.getCart().length > 0) {
+      const keepCart = await confirmModal.show({
+        title: 'Venda em Andamento',
+        message: `Existe uma venda com <strong>${posService.getCart().length} item(ns)</strong> no carrinho.<br>Deseja <strong>manter</strong> os itens para que <strong>${emp.name}</strong> prossiga com o atendimento, ou cancelar a venda antes da troca?`,
+        confirmText: 'Manter Itens no Carrinho',
+        cancelText: 'Limpar Carrinho',
+        type: 'warning',
+        icon: 'shopping-cart'
+      });
+      if (!keepCart) {
+        posService.clearCart();
+        this.renderCart();
+      }
+    }
+
+    // Solicita o PIN do operador
+    const pinResult = await pinModal.prompt({
+      title: 'Troca Rápida de Operador',
+      desc: `Digite o PIN de segurança de <strong>${emp.name}</strong> para assumir o caixa:`,
+      employee: emp,
+      validate: (inputPin) => employeeService.validatePin(emp.id, inputPin)
+    });
+
+    if (pinResult.confirmed) {
+      try {
+        await cashService.switchOperator(emp, authService.currentUser, 'Troca rápida pelo ícone superior');
+        employeeService.setActiveEmployee(emp);
+
+        this.renderEmployees();
+        this.renderActiveOperatorHeader();
+        this.renderCashRegister();
+        this.renderShiftRanking();
+        this.renderQuickCaixaDropdown();
+
+        this.showToast(`Caixa assumido com sucesso por "${emp.name}"! Turno ${currentSession.sessionCode} mantido em aberto.`, 'success');
+      } catch (err) {
+        console.error('[Orvix PDV] Erro na troca rápida de operador:', err);
+        this.showToast(err.message || 'Erro ao alternar operador.', 'error');
+      }
     }
   }
 

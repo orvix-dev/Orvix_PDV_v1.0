@@ -78,6 +78,21 @@ export class CashService {
       openedByEmployeeId: opId,
       openedByEmployeeName: opName,
       openedByEmployeeRole: opRole,
+      currentEmployeeId: opId,
+      currentEmployeeName: opName,
+      currentEmployeeRole: opRole,
+      operatorSwitches: [
+        {
+          fromEmployeeId: null,
+          fromEmployeeName: null,
+          toEmployeeId: opId,
+          toEmployeeName: opName,
+          toEmployeeRole: opRole,
+          switchedAt: now.toISOString(),
+          switchedBy: opName,
+          reason: 'Abertura de caixa'
+        }
+      ],
       openingBills: b,
       openingCoins: c,
       openingTotal: total,
@@ -221,24 +236,102 @@ export class CashService {
   }
 
   /**
-   * Retorna métricas do turno ativo (ou totais acumulados)
+   * Alterna o operador responsável pelo turno aberto sem fechar a sessão financeira
    */
-  getTodayMetrics(sales = [], expenses = []) {
-    const openingTotal = this.isOpen() ? (this.currentSession.openingTotal || 0) : 0;
-    const currentSessionId = this.getCurrentSessionId();
-    
+  async switchOperator(targetEmployee, user = null, reason = 'Troca rápida de operador') {
+    if (!this.isOpen()) {
+      throw new Error('Não há turno de caixa aberto no momento para realizar a troca.');
+    }
+    if (!targetEmployee || !targetEmployee.id) {
+      throw new Error('Colaborador inválido para assumir o caixa.');
+    }
+
+    const now = new Date();
+    const prevEmpId = this.currentSession.currentEmployeeId || this.currentSession.openedByEmployeeId;
+    const prevEmpName = this.currentSession.currentEmployeeName || this.currentSession.openedByEmployeeName;
+
+    const switchRecord = {
+      fromEmployeeId: prevEmpId,
+      fromEmployeeName: prevEmpName,
+      toEmployeeId: targetEmployee.id,
+      toEmployeeName: targetEmployee.name,
+      toEmployeeRole: targetEmployee.role,
+      switchedAt: now.toISOString(),
+      switchedBy: user?.displayName || user?.email?.split('@')[0] || targetEmployee.name,
+      reason: reason
+    };
+
+    if (!Array.isArray(this.currentSession.operatorSwitches)) {
+      this.currentSession.operatorSwitches = [];
+    }
+    this.currentSession.operatorSwitches.push(switchRecord);
+
+    this.currentSession.currentEmployeeId = targetEmployee.id;
+    this.currentSession.currentEmployeeName = targetEmployee.name;
+    this.currentSession.currentEmployeeRole = targetEmployee.role;
+    this.currentSession.updatedAt = now.toISOString();
+
+    this.saveCurrentSession();
+
+    // Sincroniza alteração no Firestore se conectado
+    if (firebaseDb && this.currentTenantId && this.currentSession.id) {
+      try {
+        const sessionRef = doc(firebaseDb, 'tenants', this.currentTenantId, 'cash_sessions', this.currentSession.id);
+        await updateDoc(sessionRef, {
+          currentEmployeeId: targetEmployee.id,
+          currentEmployeeName: targetEmployee.name,
+          currentEmployeeRole: targetEmployee.role,
+          operatorSwitches: this.currentSession.operatorSwitches,
+          serverUpdated: serverTimestamp()
+        });
+      } catch (err) {
+        console.warn('Erro ao atualizar operador do caixa no Firestore:', err);
+      }
+    }
+
+    return this.currentSession;
+  }
+
+  /**
+   * Retorna métricas detalhadas exclusivamente do Turno/Sessão Ativa
+   */
+  getActiveSessionMetrics(sales = [], expenses = []) {
+    const isOpen = this.isOpen();
+    const session = this.currentSession;
+
+    if (!isOpen || !session) {
+      return {
+        isOpen: false,
+        sessionId: null,
+        sessionCode: '--',
+        openedAt: null,
+        openingTotal: 0,
+        cashSales: 0,
+        cardSales: 0,
+        pixSales: 0,
+        totalSalesAmount: 0,
+        totalSalesCount: 0,
+        totalExpenses: 0,
+        currentBalance: 0,
+        currentOperatorName: 'Nenhum',
+        currentOperatorId: null,
+        currentOperatorRole: '',
+        operatorSwitches: []
+      };
+    }
+
+    const sessionId = session.id;
+    const sessionSales = sales.filter(s => s.cashSessionId === sessionId || (!s.cashSessionId && s.date === session.dateStr && s.createdAt >= session.openedAt));
+
     let cashSales = 0;
     let cardSales = 0;
     let pixSales = 0;
-
-    // Filtra vendas associadas à sessão atual se houver uma aberta
-    const sessionSales = currentSessionId 
-      ? sales.filter(s => !s.cashSessionId || s.cashSessionId === currentSessionId)
-      : sales;
+    let totalSalesAmount = 0;
 
     sessionSales.forEach(sale => {
       const method = (sale.paymentMethod || '').toLowerCase();
       const val = parseFloat(sale.total) || 0;
+      totalSalesAmount += val;
       if (method.includes('dinheiro') || method === 'cash') {
         cashSales += val;
       } else if (method.includes('cart') || method === 'card') {
@@ -250,19 +343,115 @@ export class CashService {
       }
     });
 
-    const totalExpenses = expenses.reduce((s, e) => s + (parseFloat(e.value) || 0), 0);
+    const sessionExpenses = expenses.filter(e => {
+      if (e.cashSessionId) return e.cashSessionId === sessionId;
+      if (e.date === session.dateStr && e.createdAt) {
+        return e.createdAt >= session.openedAt;
+      }
+      return true;
+    });
+
+    const totalExpenses = sessionExpenses.reduce((sum, e) => sum + (parseFloat(e.value) || 0), 0);
+    const openingTotal = session.openingTotal || 0;
     const currentBalance = openingTotal + cashSales - totalExpenses;
 
+    const currentOpName = session.currentEmployeeName || session.openedByEmployeeName || session.openedByName || 'Operador';
+    const currentOpId = session.currentEmployeeId || session.openedByEmployeeId || null;
+    const currentOpRole = session.currentEmployeeRole || session.openedByEmployeeRole || 'Operador de Caixa';
+
     return {
+      isOpen: true,
+      sessionId: session.id,
+      sessionCode: session.sessionCode || '#001',
+      openedAt: session.openedAt,
       openingTotal: parseFloat(openingTotal.toFixed(2)),
       cashSales: parseFloat(cashSales.toFixed(2)),
       cardSales: parseFloat(cardSales.toFixed(2)),
       pixSales: parseFloat(pixSales.toFixed(2)),
+      totalSalesAmount: parseFloat(totalSalesAmount.toFixed(2)),
+      totalSalesCount: sessionSales.length,
       totalExpenses: parseFloat(totalExpenses.toFixed(2)),
       currentBalance: parseFloat(currentBalance.toFixed(2)),
-      isOpen: this.isOpen(),
-      currentSession: this.currentSession
+      currentOperatorName: currentOpName,
+      currentOperatorId: currentOpId,
+      currentOperatorRole: currentOpRole,
+      operatorSwitches: session.operatorSwitches || []
     };
+  }
+
+  /**
+   * Retorna o consolidado financeiro do dia (todas as sessões e operadores)
+   */
+  getDailyConsolidatedMetrics(dateStr, sales = [], expenses = []) {
+    const targetDate = dateStr || new Date().toISOString().split('T')[0];
+    const daySales = sales.filter(s => s.date === targetDate);
+    const dayExpenses = expenses.filter(e => e.date === targetDate);
+
+    let cashSales = 0;
+    let cardSales = 0;
+    let pixSales = 0;
+    let totalSalesAmount = 0;
+
+    daySales.forEach(sale => {
+      const method = (sale.paymentMethod || '').toLowerCase();
+      const val = parseFloat(sale.total) || 0;
+      totalSalesAmount += val;
+      if (method.includes('dinheiro') || method === 'cash') {
+        cashSales += val;
+      } else if (method.includes('cart') || method === 'card') {
+        cardSales += val;
+      } else if (method.includes('pix')) {
+        pixSales += val;
+      } else {
+        cashSales += val;
+      }
+    });
+
+    const totalExpenses = dayExpenses.reduce((sum, e) => sum + (parseFloat(e.value) || 0), 0);
+
+    // Soma dos fundos iniciais de todas as sessões operadas no dia
+    const todayClosedSessions = this.history.filter(s => s.dateStr === targetDate);
+    let totalOpeningFunds = todayClosedSessions.reduce((sum, s) => sum + (parseFloat(s.openingTotal) || 0), 0);
+
+    if (this.currentSession && this.currentSession.dateStr === targetDate) {
+      totalOpeningFunds += parseFloat(this.currentSession.openingTotal || 0);
+    }
+
+    const consolidatedDrawerBalance = totalOpeningFunds + cashSales - totalExpenses;
+
+    const uniqueOperators = new Set();
+    daySales.forEach(s => {
+      if (s.employeeName) uniqueOperators.add(s.employeeName);
+      else if (s.operatorName) uniqueOperators.add(s.operatorName);
+    });
+    if (this.currentSession) {
+      if (this.currentSession.currentEmployeeName) uniqueOperators.add(this.currentSession.currentEmployeeName);
+      if (this.currentSession.openedByEmployeeName) uniqueOperators.add(this.currentSession.openedByEmployeeName);
+    }
+
+    const totalSessionsCount = todayClosedSessions.length + (this.currentSession && this.currentSession.dateStr === targetDate ? 1 : 0);
+
+    return {
+      date: targetDate,
+      totalSalesAmount: parseFloat(totalSalesAmount.toFixed(2)),
+      totalSalesCount: daySales.length,
+      cashSales: parseFloat(cashSales.toFixed(2)),
+      cardSales: parseFloat(cardSales.toFixed(2)),
+      pixSales: parseFloat(pixSales.toFixed(2)),
+      totalExpenses: parseFloat(totalExpenses.toFixed(2)),
+      totalOpeningFunds: parseFloat(totalOpeningFunds.toFixed(2)),
+      consolidatedDrawerBalance: parseFloat(consolidatedDrawerBalance.toFixed(2)),
+      totalSessionsCount,
+      uniqueOperatorsCount: uniqueOperators.size,
+      operatorsList: Array.from(uniqueOperators)
+    };
+  }
+
+  /**
+   * Retorna métricas do turno ativo (mantido para retrocompatibilidade)
+   */
+  getTodayMetrics(sales = [], expenses = []) {
+    return this.getActiveSessionMetrics(sales, expenses);
   }
 
   /**
